@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.cangzr.neocard",
+    "sha256_cert_fingerprints": [
+      "D6:A1:CE:E3:37:0D:37:69:10:BB:89:81:60:83:5A:2D:69:4B:68:20:39:6B:27:47:AC:D4:C9:91:1B:AD:B4:1C"
+    ]
+  }
+}] 
