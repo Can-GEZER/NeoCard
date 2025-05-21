@@ -130,3 +130,6 @@ vcs.xml
 
 # Android Profiling
 *.hprof
+
+app/src/main/assets/service-account.json
+
