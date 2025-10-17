@@ -1,4 +1,414 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">NeoCard</string>
-    <string name="default_web_client_id">AIzaSyAMFhrFcDc7LizHxs5CgkvG8966yYtW8B0</string>
+    <string name="default_web_client_id">41402377201-9p958c6v55b7ad3bdm59h82k9ecb3092.apps.googleusercontent.com</string>
+    
+    <!-- Card Types -->
+    <string name="card_type_business">İş Kartviziti</string>
+    <string name="card_type_personal">Kişisel Kartvizit</string>
+    <string name="card_type_education">Eğitim Kartviziti</string>
+    <string name="card_type_social">Sosyal Kartvizit</string>
+    <string name="card_type_freelance">Freelance Kartvizit</string>
+    <string name="card_type_all">Tümü</string>
+    
+    <!-- Auth Screen -->
+    <string name="welcome_to_neocard">NeoCard\'a Hoş Geldiniz</string>
+    <string name="login_to_manage_cards">Kartvizitlerinizi yönetmek için giriş yapın</string>
+    <string name="sign_in_with_google">Google ile Giriş Yap</string>
+    <string name="privacy_policy_agreement">Google hesabınızla giriş yaparak, Gizlilik Politikası ve Kullanım Koşullarını kabul etmiş olursunuz.</string>
+    <string name="login_successful">Giriş başarılı</string>
+    <string name="registration_successful">Kayıt başarılı</string>
+    <string name="network_error">İnternet bağlantınızı kontrol edin</string>
+    <string name="login_error">Giriş sırasında bir hata oluştu: %s</string>
+    <string name="registration_error">Kayıt sırasında bir hata oluştu: %s</string>
+    <string name="google_signin_error">Google ile giriş yapılamadı: %d</string>
+    <string name="email_empty">E-posta adresi boş olamaz</string>
+    <string name="email_invalid">Geçerli bir e-posta adresi giriniz</string>
+    <string name="password_min_length">Şifre en az 6 karakter olmalıdır</string>
+    <string name="password_digit">Şifre en az bir rakam içermelidir</string>
+    <string name="password_letter">Şifre en az bir harf içermelidir</string>
+    <string name="name_empty">Ad boş olamaz</string>
+    <string name="name_min_length">Ad en az 2 karakter olmalıdır</string>
+    <string name="surname_empty">Soyad boş olamaz</string>
+    <string name="surname_min_length">Soyad en az 2 karakter olmalıdır</string>
+    <string name="email_already_in_use">Bu e-posta adresi zaten kullanımda</string>
+    <string name="invalid_password">Hatalı şifre</string>
+    <string name="user_not_found">Bu e-posta adresi ile kayıtlı kullanıcı bulunamadı</string>
+    
+    <!-- Home Screen -->
+    <string name="my_cards">Kartvizitlerim</string>
+    <string name="select_card_type">Kart tipini seç</string>
+    <string name="explore_other_cards">Diğer Kartvizitleri Keşfet</string>
+    <string name="login_to_create_cards">Kartvizitlerinizi oluşturup yönetmek için giriş yapın</string>
+    <string name="login">Giriş Yap</string>
+    <string name="no_cards_created">Henüz kartvizit oluşturulmadı.\nYeni bir kartvizit eklemek için + simgesine tıklayın.</string>
+    <string name="no_cards_of_type">Seçili tipte kartvizit bulunamadı.</string>
+    <string name="card_actions">Kartvizit İşlemleri</string>
+    <string name="view_details">Detayları Görüntüle</string>
+    <string name="share_card">Kartvizit Paylaş</string>
+    <string name="share">Paylaş</string>
+    <string name="qr_code">QR Kod</string>
+    <string name="image">Görsel</string>
+    <string name="link_copied">Link kopyalandı</string>
+    <string name="share_error">Paylaşım yapılırken bir hata oluştu</string>
+    <string name="close">Kapat</string>
+    <string name="view">Görüntüle</string>
+    <string name="exporting">Dışa Aktarılıyor...</string>
+    <string name="share_as_image">Görsel Olarak Paylaş</string>
+    <string name="search_placeholder">İsim, ünvan veya şirket ara...</string>
+    <string name="no_cards_to_explore">Henüz keşfedilecek kart yok.</string>
+    <string name="no_search_results">Aramanızla eşleşen kart bulunamadı.</string>
+    <string name="view_all">Tümünü Gör</string>
+    <string name="created_with_neocard">NeoCard ile oluşturuldu</string>
+    
+    <!-- Card Detail Screen -->
+    <string name="card_detail">Kartvizit Detayı</string>
+    <string name="edit">Düzenle</string>
+    <string name="delete">Sil</string>
+    <string name="delete_card">Kartviziti Sil</string>
+    <string name="confirm_delete">Bu kartviziti silmek istediğinizden emin misiniz?</string>
+    <string name="yes">Evet</string>
+    <string name="no">Hayır</string>
+    <string name="card_deleted">Kartvizit başarıyla silindi</string>
+    <string name="delete_error">Kartvizit silinirken bir hata oluştu</string>
+    <string name="card_updated">Kartvizit başarıyla güncellendi</string>
+    <string name="update_error">Kartvizit güncellenirken hata oluştu: %s</string>
+    <string name="profile_image_upload_error">Profil resmi yüklenirken hata oluştu: %s</string>
+    <string name="card_not_found">Kartvizit bulunamadı</string>
+    <string name="go_back">Geri Dön</string>
+    <string name="back">Geri</string>
+    <string name="save">Kaydet</string>
+    <string name="loading_card">Kartvizit yükleniyor...</string>
+    <string name="card_load_error">Kartvizit yüklenirken hata oluştu: %s</string>
+    <string name="statistics_load_error">İstatistikler yüklenirken hata oluştu: %s</string>
+    <string name="phone_empty">Telefon alanı boş olamaz</string>
+    <string name="phone_invalid">Geçerli bir telefon numarası giriniz</string>
+    <string name="email_app_error">E-posta uygulaması açılamadı</string>
+    <string name="phone_app_error">Telefon uygulaması açılamadı</string>
+    <string name="website_open_error">Web sitesi açılamadı</string>
+    <string name="view_cv">CV\'mi Görüntüle</string>
+    <string name="cv_open_error">CV linki açılamadı</string>
+    <string name="link_open_error">Link açılamadı: %s</string>
+    <string name="profile_picture">Profil Resmi</string>
+    <string name="change_image">Resim Değiştir</string>
+    <string name="statistics">İstatistikler</string>
+    <string name="statistics_premium_only">İstatistik paneli premium üyeler için kullanılabilir.</string>
+    <string name="get_premium">Premium Ol</string>
+    <string name="refresh">Yenile</string>
+    <string name="unique_visitors">Tekil Ziyaretçi</string>
+    <string name="link_clicks">Link Tıklamaları</string>
+    <string name="qr_scans">QR Taramaları</string>
+    <string name="most_clicked_links">En çok tıklanan linkler</string>
+    <string name="collapse">Daralt</string>
+    <string name="expand">Genişlet</string>
+    
+    <!-- Profile Screen -->
+    <string name="profile">Profil</string>
+    <string name="edit_profile">Profili Düzenle</string>
+    <string name="logout">Çıkış Yap</string>
+    <string name="language">Dil</string>
+    <string name="language_english">İngilizce</string>
+    <string name="language_turkish">Türkçe</string>
+    <string name="theme">Tema</string>
+    <string name="theme_light">Açık</string>
+    <string name="theme_dark">Koyu</string>
+    <string name="theme_system">Sistem</string>
+    <string name="premium">Premium</string>
+    <string name="upgrade_to_premium">Premium\'a Yükselt</string>
+    <string name="premium_features">Premium Özellikler</string>
+    <string name="premium_membership">Premium Üyelik</string>
+    <string name="unlimited_cards_and_more">Sınırsız kartvizit ve daha fazlası</string>
+    <string name="unlimited_cards">Sınırsız Kartvizit</string>
+    <string name="unlimited_cards_desc">İstediğiniz kadar kartvizit oluşturun</string>
+    <string name="custom_designs">Özel Tasarımlar</string>
+    <string name="custom_designs_desc">Gradyan arkaplan ve yazı stilleri</string>
+    <string name="detailed_info">Detaylı Bilgiler</string>
+    <string name="detailed_info_desc">Biyografi ve CV ekleme seçenekleri</string>
+    <string name="ad_free">Reklamsız Deneyim</string>
+    <string name="ad_free_desc">Kesintisiz premium deneyim</string>
+    <string name="discover_more_features">Premium ile daha fazla özellik keşfedin!</string>
+    <string name="monthly_price">29.99₺</string>
+    <string name="monthly">aylık</string>
+    <string name="start_now">Hemen Başla</string>
+    <string name="premium_active">Premium Üyeliğiniz Aktif</string>
+    <string name="maybe_later">Belki Daha Sonra</string>
+    <string name="settings">Ayarlar</string>
+    <string name="about">Hakkında</string>
+    <string name="help">Yardım</string>
+    <string name="privacy_policy">Gizlilik Politikası</string>
+    <string name="terms_of_service">Kullanım Koşulları</string>
+    <string name="version">Versiyon</string>
+    
+    <!-- Bottom Sheet Content -->
+    <string name="privacy_policy_title">Gizlilik Politikası</string>
+    <string name="privacy_policy_content">Bu gizlilik politikası, NeoCard uygulamasının kullanımı sırasında toplanan, kullanılan ve paylaşılan bilgiler hakkında sizi bilgilendirmek amacıyla hazırlanmıştır.\n\n1. Toplanan Bilgiler\n\n• Kullanıcı Bilgileri: Ad, soyad, e-posta adresi, profil fotoğrafı\n• Kartvizit Verileri: Oluşturulan dijital kartvizitler, iletişim bilgileri, sosyal medya linkleri\n• Bağlantı Verileri: Eklenen bağlantılar, kartvizit görüntüleme istatistikleri\n• Premium Üyelik: Abonelik durumu, ödeme bilgileri (Google Play Store üzerinden)\n• Kullanım Verileri: Uygulama içi etkileşimler, kartvizit paylaşım sayıları\n• Teknik Veriler: Cihaz bilgileri, IP adresi, uygulama versiyonu\n\n2. Bilgilerin Kullanımı\n\nToplanan bilgiler şu amaçlarla kullanılır:\n• Dijital kartvizit oluşturma ve paylaşım hizmetleri\n• Bağlantı yönetimi ve keşfet özellikleri\n• Premium üyelik yönetimi ve ödeme işlemleri\n• Uygulama performansını artırma ve hata ayıklama\n• Kullanıcı deneyimini kişiselleştirme\n• Analitik ve istatistiksel raporlama\n\n3. Veri Paylaşımı\n\nKişisel bilgileriniz aşağıdaki durumlar dışında üçüncü taraflarla paylaşılmaz:\n• Yasal zorunluluklar ve mahkeme kararları\n• Kullanıcının açık rızası\n• Hizmet sağlayıcıları (Firebase, Google Play Store)\n• Kartvizit paylaşımı (sadece sizin izin verdiğiniz bilgiler)\n\n4. Veri Güvenliği\n\n• Tüm veriler Firebase güvenli sunucularında şifrelenmiş olarak saklanır\n• Google Play Store üzerinden güvenli ödeme işlemleri\n• SSL/TLS şifreleme ile veri aktarımı\n• Düzenli güvenlik güncellemeleri\n\n5. Kullanıcı Hakları\n\n• Verilerinizi görüntüleme ve düzeltme hakkı\n• Hesabınızı silme hakkı\n• Veri işleme faaliyetlerine itiraz etme hakkı\n• Kişisel verilerinizin silinmesini talep etme hakkı\n\n6. Çerezler ve Takip\n\nUygulama, kullanıcı deneyimini iyileştirmek için Firebase Analytics kullanır. Bu veriler anonim olarak toplanır.\n\n7. Değişiklikler\n\nBu gizlilik politikası gerektiğinde güncellenebilir. Önemli değişiklikler uygulama içi bildirim ile kullanıcılara duyurulur.\n\n8. İletişim\n\nGizlilik politikası ile ilgili sorularınız için: support@neocard.app</string>
+    
+    <string name="about_app_title">Uygulama Hakkında</string>
+    <string name="about_app_content">NeoCard, dijital kartvizit dünyasında devrim yaratan modern bir uygulamadır. Profesyonel bağlantılarınızı güçlendirmek ve ağınızı genişletmek için tasarlanmış kapsamlı bir platformdur.\n\n🎯 Ana Özellikler\n\n• Dijital Kartvizit Oluşturma\n  - 5 farklı kart tipi (İş, Kişisel, Eğitim, Sosyal, Freelance)\n  - Özelleştirilebilir tasarım ve renk seçenekleri\n  - Sosyal medya linkleri entegrasyonu\n  - QR kod ile kolay paylaşım\n\n• Bağlantı Yönetimi\n  - Diğer kullanıcıların kartlarını bağlantılarınıza ekleme\n  - Bağlantı istekleri yönetimi\n  - Kartvizit görüntüleme istatistikleri\n\n• Keşfet Özelliği\n  - Tüm herkese açık kartları görüntüleme\n  - Arama ve filtreleme seçenekleri\n  - Yeni bağlantılar keşfetme\n\n• Premium Üyelik\n  - Gelişmiş analitik raporlar\n  - Reklamsız deneyim\n  - Öncelikli destek\n\n• Çoklu Dil Desteği\n  - Türkçe ve İngilizce arayüz\n  - Kolay dil değiştirme\n\n• Güvenlik ve Gizlilik\n  - Firebase güvenli altyapısı\n  - SSL şifreleme\n  - KVKK uyumlu veri işleme\n\nNeoCard ile profesyonel dünyada daha güçlü bağlantılar kurun ve kariyerinizi ileriye taşıyın!</string>
+    
+    <string name="help_support_title">Yardım ve Destek</string>
+    <string name="help_support_content">NeoCard kullanımı ile ilgili sorularınız ve teknik destek için aşağıdaki rehberi inceleyebilirsiniz:\n\n📱 Temel Kullanım\n\n1. Hesap Oluşturma\n• Google hesabınızla giriş yapın\n• İnternet bağlantınızı kontrol edin\n• E-posta adresinizin doğru olduğundan emin olun\n\n2. Kartvizit Oluşturma\n• Alt menüden \'+\' butonuna tıklayın\n• Kart tipini seçin (İş, Kişisel, Eğitim, Sosyal, Freelance)\n• Kişisel bilgilerinizi girin\n• Tasarım ve renk seçeneklerini özelleştirin\n• \'Kaydet\' butonuna tıklayın\n\n3. Kartvizit Paylaşımı\n• Kartınızın detay sayfasına gidin\n• QR kod ile paylaşım yapın\n• Link kopyalayarak paylaşın\n• Sosyal medyada paylaşın\n\n🔗 Bağlantı Yönetimi\n\n4. Bağlantı Ekleme\n• Keşfet bölümünden kartları görüntüleyin\n• \'Bağlantı Ekle\' butonuna tıklayın\n• Bağlantı istekleri \'Bağlantı İstekleri\' bölümünde görünür\n\n5. Bağlantı İstekleri\n• Profil sayfasından \'Bağlantı İstekleri\'ne gidin\n• Gelen istekleri onaylayın veya reddedin\n• Gönderdiğiniz isteklerin durumunu takip edin\n\n📊 Analitik ve İstatistikler\n\n6. Kartvizit İstatistikleri\n• Kartınızın detay sayfasına gidin\n• \'İstatistikler\' butonuna tıklayın\n• Görüntüleme sayılarını ve kaynakları görün\n\n💎 Premium Özellikler\n\n7. Premium Üyelik\n• Profil sayfasından \'Premium Üyelik\' butonuna tıklayın\n• Google Play Store üzerinden satın alın\n• Gelişmiş analitik raporlara erişin\n• Reklamsız deneyim yaşayın\n\n8. Promosyon Kodu\n• Profil sayfasında aktif kod varsa \'Promosyon Kodu Kullan\' kartı görünür\n• Kodunuzu girin ve 1 haftalık premium kazanın\n\n⚙️ Ayarlar ve Gizlilik\n\n9. Dil Değiştirme\n• Profil sayfasından \'Dil\' seçeneğine gidin\n• Türkçe veya İngilizce seçin\n\n10. Hesap Silme\n• Ayarlar menüsünden \'Hesabımı Sil\' seçeneğine gidin\n• Dikkat: Bu işlem geri alınamaz!\n\n📞 Destek ve İletişim\n\n• E-posta: support@neocard.app\n• Sorun bildirimi için uygulama içi geri bildirim kullanın\n• Destek ekibimiz 24-48 saat içinde yanıt verir\n\n💡 İpuçları\n\n• Kartınızı düzenli olarak güncelleyin\n• Profil fotoğrafı ekleyerek güvenilirliğinizi artırın\n• Sosyal medya linklerinizi ekleyin\n• Bağlantılarınızla düzenli olarak etkileşim kurun</string>
+    
+    <!-- Connection Requests Section -->
+    <string name="connection_requests">Bağlantı İstekleri</string>
+    <string name="no_connection_requests">Henüz bir bağlantı isteği bulunmuyor.</string>
+    
+    <!-- Delete Account Dialog -->
+    <string name="delete_account_title">Hesabı Sil</string>
+    <string name="delete_account_message">Hesabınızı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.</string>
+    <string name="yes_delete">Evet, Sil</string>
+    <string name="give_up">Vazgeç</string>
+    <string name="delete_note">Notu Sil</string>
+    
+    <!-- Delete Account Messages -->
+    <string name="account_deleted_successfully">Hesap başarıyla silindi.</string>
+    <string name="google_account_reauth_required">Google hesabı ile giriş yaptığınız için hesabınızı silmek için önce çıkış yapıp tekrar giriş yapmanız gerekiyor.</string>
+    <string name="account_deleted_firestore_error">Hesap silindi ancak Firestore verileri silinemedi: %s</string>
+    <string name="account_deleted_jobs_error">Hesap silindi ancak iş ilanları silinemedi: %s</string>
+    <string name="account_deleted_cards_error">Hesap silindi ancak kartlar silinemedi: %s</string>
+    <string name="reauth_required">Hesabınızı silmek için yeniden giriş yapmanız gerekiyor. Lütfen çıkış yapıp tekrar giriş yapın.</string>
+    <string name="account_delete_error">Hesap silme hatası: %s</string>
+    <string name="no_logged_in_user">Giriş yapan kullanıcı bulunamadı.</string>
+    
+    <!-- Toast Messages -->
+    <string name="promo_code_deleted">Promosyon kodu silindi</string>
+    <string name="note_deleted">Not silindi</string>
+    <string name="error_message">Hata: %s</string>
+    
+    <!-- Filter Options -->
+    <string name="all">Tümü</string>
+    
+    <!-- Create Card Screen -->
+    <string name="create_card">Kartvizit Oluştur</string>
+    <string name="edit_card">Kartvizit Düzenle</string>
+    <string name="personal_info">Kişisel Bilgiler</string>
+    <string name="name">Ad</string>
+    <string name="surname">Soyad</string>
+    <string name="title">Ünvan</string>
+    <string name="company">Şirket</string>
+    <string name="phone">Telefon</string>
+    <string name="email">E-posta</string>
+    <string name="contact_info">İletişim Bilgileri</string>
+    <string name="website">Web Sitesi</string>
+    <string name="social_media">Sosyal Medya</string>
+    <string name="linkedin">LinkedIn</string>
+    <string name="twitter">Twitter</string>
+    <string name="instagram">Instagram</string>
+    <string name="facebook">Facebook</string>
+    <string name="github">GitHub</string>
+    <string name="card_type">Kart Tipi</string>
+    <string name="design">Tasarım</string>
+    <string name="background_color">Arkaplan Rengi</string>
+    <string name="background_gradient">Arkaplan Gradyanı</string>
+    <string name="text_style">Metin Stili</string>
+    <string name="cancel">İptal</string>
+    <string name="card_saved">Kartvizit başarıyla kaydedildi</string>
+    <string name="save_error">Kartvizit kaydedilirken bir hata oluştu</string>
+    <string name="fill_required_fields">Lütfen gerekli alanları doldurun</string>
+    <string name="upload_profile_picture">Profil Resmi Yükle</string>
+    <string name="remove_profile_picture">Profil Resmini Kaldır</string>
+    <string name="uploading">Yükleniyor...</string>
+    <string name="upload_error">Resim yüklenirken bir hata oluştu</string>
+    <string name="preview">Önizleme</string>
+    <string name="please_login">Lütfen giriş yapın</string>
+    <string name="premium_card_limit">Premium olmadan sadece 1 kart oluşturabilirsiniz.</string>
+    <string name="image_upload_error">Resim yüklenirken hata oluştu: %s</string>
+    <string name="error_occurred">Hata oluştu: %s</string>
+    <string name="unknown_error">Bilinmeyen hata</string>
+    <string name="profile_picture_logo">Profil Fotoğrafı / Logo</string>
+    <string name="choose_from_gallery">Galeriden Seç</string>
+    <string name="business_info">İş Bilgileri</string>
+    <string name="text_styles">Yazı Stilleri</string>
+    <string name="solid_color">Düz Renk</string>
+    <string name="gradient">Gradyan</string>
+    <string name="select_gradient">Gradyan Seç</string>
+    <string name="no_text_selected">Henüz bir yazı seçilmedi</string>
+    <string name="font_size">Yazı Boyutu: %d sp</string>
+    <string name="text_color">Yazı Rengi</string>
+    <string name="select_card_purpose">Kartvizitinizin kullanım amacını seçin</string>
+    <string name="visibility">Görünürlük</string>
+    <string name="on">Açık</string>
+    <string name="off">Kapalı</string>
+    <string name="card_visible_to_all">Kartvizitiniz keşfet bölümünde herkese açık olarak görüntülenecek</string>
+    <string name="card_visible_to_shared">Kartvizitiniz sadece doğrudan paylaştığınız kişilere görünecek</string>
+    <string name="saving_card">Kart Kaydediliyor...</string>
+    <string name="premium_benefits">Premium Avantajları</string>
+    <string name="premium_advantages_description">Premium üyelik ile aşağıdaki avantajlara erişebilirsiniz:</string>
+    <string name="premium_unlimited_cards">• Sınırsız kart oluşturma</string>
+    <string name="premium_gradient_backgrounds">• Gradyan arkaplanlar</string>
+    <string name="premium_custom_text_styles">• Yazı stillerini özelleştirme</string>
+    <string name="premium_ad_free">• Reklamsız deneyim</string>
+    
+    <!-- Connection Requests -->
+    <string name="accept">Kabul Et</string>
+    <string name="reject">Reddet</string>
+    <string name="request_accepted">Bağlantı isteği kabul edildi</string>
+    <string name="request_rejected">Bağlantı isteği reddedildi</string>
+    <string name="total_requests">Toplam İstek</string>
+    <string name="loading_connection_requests">Bağlantı istekleri yükleniyor...</string>
+    <string name="unknown_user">Bilinmeyen Kullanıcı</string>
+    <string name="email_not_found">E-posta bulunamadı</string>
+    <string name="card_id_format">Kart ID: %s...</string>
+    
+    <!-- Card Statistics -->
+    <string name="card_statistics">Kart İstatistikleri</string>
+    <string name="views">Görüntülenme</string>
+    <string name="saves">Kaydetme</string>
+    <string name="connections">Bağlantılar</string>
+    <string name="today">Bugün</string>
+    <string name="this_week">Bu Hafta</string>
+    <string name="this_month">Bu Ay</string>
+    <string name="all_time">Tüm Zamanlar</string>
+    <string name="no_statistics">İstatistik bulunamadı</string>
+    <string name="summary_statistics">Özet İstatistikler</string>
+    <string name="total_views">Toplam Görüntülenme</string>
+    <string name="last_seven_days_views">Son 7 Gün Görüntülenme</string>
+    <string name="interaction_details">Etkileşim Detayları</string>
+    <string name="no_link_clicks">Henüz link tıklaması yok</string>
+    <string name="share_details">Paylaşım Detayları</string>
+    <string name="no_shares">Henüz paylaşım yok</string>
+    
+    <!-- Shared Card Detail -->
+    <string name="connect">Bağlan</string>
+    <string name="save_card">Kartı Kaydet</string>
+    <string name="connection_request_sent">Bağlantı isteği gönderildi</string>
+    <string name="card_saved_to_contacts">Kart rehbere kaydedildi</string>
+    <string name="already_connected">Zaten bağlısınız</string>
+    <string name="request_pending">İstek beklemede</string>
+    <string name="bio">Biyografi</string>
+    <string name="biography_placeholder">Kısa bir biyografi yazın...</string>
+    <string name="biography_premium_only">Biyografi özelliği sadece premium üyelere özeldir</string>
+    <string name="work_info">İş Bilgileri</string>
+    <string name="cv_link">CV Linki</string>
+    <string name="cv_placeholder">CV\'nize ulaşılabilecek bir bağlantı</string>
+    <string name="cv_premium_only">CV özelliği sadece premium üyelere özeldir</string>
+    <string name="username_or_url">kullanıcıadı veya tam URL</string>
+    <string name="cv">CV</string>
+    <string name="add_connection">Bağlantı Ekle</string>
+    <string name="remove_connection">Bağlantıyı Kaldır</string>
+    <string name="confirm_send_connection_request">Bu kullanıcıya bağlantı isteği göndermek istiyor musunuz?</string>
+    <string name="confirm_remove_connection">Bu bağlantıyı kaldırmak istiyor musunuz?</string>
+    <string name="confirmation_required">Onay Gerekli</string>
+    <string name="new_connection_request">Yeni Bağlantı İsteği</string>
+    <string name="connection_request_message">%s size bağlantı isteği gönderdi</string>
+    <string name="connection_removed">Bağlantı başarıyla kaldırıldı!</string>
+    
+    <!-- Business Card List -->
+    <string name="my_connections">Bağlantılarım</string>
+    <string name="no_connections">Henüz bağlantı yok</string>
+    <string name="search_connections">Bağlantılarda ara</string>
+    <string name="search_cards">Kartvizit ara...</string>
+    <string name="search">Ara</string>
+    <string name="filter_by_tags">Etiketlere Göre Filtrele</string>
+    <string name="selected">Seçili</string>
+    <string name="login_to_see_connections">Bağlantılarınızı görmek için giriş yapmalısınız.</string>
+    <string name="no_cards_in_connections">Bağlantılarınızda kayıtlı bir kart bulunamadı.</string>
+    <string name="tag">Etiket</string>
+    <string name="select_tags">Etiket Seç</string>
+    <string name="max_three_tags">En fazla 3 etiket seçebilirsiniz</string>
+    <string name="search_tags">Etiket ara...</string>
+    
+    <!-- Misc -->
+    <string name="loading">Yükleniyor...</string>
+    <string name="error">Hata</string>
+    <string name="retry">Tekrar Dene</string>
+    <string name="ok">Tamam</string>
+    <string name="user">Kullanıcı</string>
+    <string name="no_email">E-posta adresi yok</string>
+    <string name="login_prompt">Giriş yapın</string>
+    
+    <!-- Explore All Cards -->
+    <string name="explore_all_cards">Tüm Kartları Keşfet</string>
+    <string name="search_explore_cards">Kart ara...</string>
+    <string name="no_cards_found">Henüz kart bulunamadı</string>
+    <string name="no_explore_search_results">Arama sonucu bulunamadı</string>
+    <string name="load_more">Daha Fazla Yükle</string>
+    
+    <!-- Promosyon Kodu -->
+    <string name="promo_code_use">Promosyon Kodu Kullan</string>
+    <string name="promo_code_weekly_premium">1 haftalık ücretsiz premium</string>
+    <string name="promo_code_dialog_title">Promosyon Kodu Kullan</string>
+    <string name="promo_code_dialog_description">Promosyon kodunuzu girerek 1 haftalık premium üyeliğin keyfini çıkarın!</string>
+    <string name="promo_code_label">Promosyon Kodu</string>
+    <string name="promo_code_use_button">Kullan</string>
+    <string name="promo_code_cancel">İptal</string>
+    <string name="promo_code_invalid">Geçersiz promosyon kodu</string>
+    <string name="promo_code_not_found">Promosyon kodu bulunamadı</string>
+    <string name="promo_code_expired">Bu promosyon kodu artık geçerli değil</string>
+    <string name="promo_code_limit_reached">Bu promosyon kodu maksimum kullanım sayısına ulaştı</string>
+    <string name="promo_code_already_used">Bu promosyon kodunu daha önce kullanmışsınız</string>
+    <string name="promo_code_success">Promosyon kodu başarıyla kullanıldı! 1 haftalık premium üyelik aktif edildi.</string>
+    <string name="premium_activation_error">Premium üyelik etkinleştirilirken bir hata oluştu.</string>
+    
+    <!-- Tag Categories -->
+    <string name="tag_category_business_relations">İş İlişkileri</string>
+    <string name="tag_category_professions">Meslek Grupları</string>
+    <string name="tag_category_other_relations">Diğer İlişkiler</string>
+    
+    <!-- Business Relations Tags -->
+    <string name="tag_customer">Müşteri</string>
+    <string name="tag_vip_customer">VIP Müşteri</string>
+    <string name="tag_potential_customer">Potansiyel Müşteri</string>
+    <string name="tag_supplier">Tedarikçi</string>
+    <string name="tag_strategic_supplier">Stratejik Tedarikçi</string>
+    <string name="tag_business_partner">İş Ortağı</string>
+    <string name="tag_strategic_partner">Stratejik İş Ortağı</string>
+    <string name="tag_employee">Çalışan</string>
+    <string name="tag_manager">Yönetici</string>
+    <string name="tag_investor">Yatırımcı</string>
+    <string name="tag_potential_investor">Potansiyel Yatırımcı</string>
+    <string name="tag_consultant">Danışman</string>
+    <string name="tag_strategic_consultant">Stratejik Danışman</string>
+    <string name="tag_mentor">Mentor</string>
+    <string name="tag_mentee">Mentee</string>
+    
+    <!-- Profession Tags -->
+    <string name="tag_software_developer">Yazılım Geliştirici</string>
+    <string name="tag_system_engineer">Sistem Mühendisi</string>
+    <string name="tag_data_engineer">Veri Mühendisi</string>
+    <string name="tag_ui_ux_designer">UI/UX Tasarımcı</string>
+    <string name="tag_graphic_designer">Grafik Tasarımcı</string>
+    <string name="tag_project_manager">Proje Yöneticisi</string>
+    <string name="tag_product_manager">Ürün Yöneticisi</string>
+    <string name="tag_marketing_specialist">Pazarlama Uzmanı</string>
+    <string name="tag_sales_representative">Satış Temsilcisi</string>
+    <string name="tag_hr_specialist">İK Uzmanı</string>
+    <string name="tag_finance_specialist">Finans Uzmanı</string>
+    <string name="tag_accountant">Muhasebeci</string>
+    <string name="tag_lawyer">Avukat</string>
+    <string name="tag_doctor">Doktor</string>
+    <string name="tag_teacher">Öğretmen</string>
+    <string name="tag_academic">Akademisyen</string>
+    <string name="tag_architect">Mimar</string>
+    <string name="tag_civil_engineer">İnşaat Mühendisi</string>
+    <string name="tag_mechanical_engineer">Makine Mühendisi</string>
+    <string name="tag_electrical_engineer">Elektrik Mühendisi</string>
+    
+    <!-- Other Relations Tags -->
+    <string name="tag_family">Aile</string>
+    <string name="tag_friend">Arkadaş</string>
+    <string name="tag_neighbor">Komşu</string>
+    <string name="tag_student">Öğrenci</string>
+    <string name="tag_other">Diğer</string>
+    
+    <!-- Color Names -->
+    <string name="color_white">Beyaz</string>
+    <string name="color_black">Siyah</string>
+    <string name="color_gold">Altın</string>
+    <string name="color_turquoise">Turkuaz</string>
+    <string name="color_green">Yeşil</string>
+    <string name="color_orange">Turuncu</string>
+    <string name="color_blue">Mavi</string>
+    <string name="color_pink">Pembe</string>
+    <string name="color_purple">Mor</string>
+    <string name="color_brown">Kahverengi</string>
+    <string name="color_gray">Gri</string>
+    <string name="color_red">Kırmızı</string>
+    
+    <!-- Gradient Names -->
+    <string name="gradient_sunset">Gün Batımı</string>
+    <string name="gradient_ocean">Okyanus</string>
+    <string name="gradient_forest">Orman</string>
+    <string name="gradient_night">Gece</string>
+    <string name="gradient_purple_mist">Mor Sis</string>
 </resources>

@@ -2,13 +2,24 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    id("com.google.gms.google-services") // 🔥 Bunu ekle!
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 
 android {
     namespace = "com.cangzr.neocard"
     compileSdk = 35
+
+    signingConfigs {
+        create("release") {
+            // Bu bilgileri local.properties dosyasından okuyacak
+            storeFile = file("../keystore/neocard-release-key.jks")
+            storePassword = project.findProperty("KEYSTORE_PASSWORD") as String? ?: ""
+            keyAlias = project.findProperty("KEY_ALIAS") as String? ?: ""
+            keyPassword = project.findProperty("KEY_PASSWORD") as String? ?: ""
+        }
+    }
 
     defaultConfig {
         applicationId = "com.cangzr.neocard"
@@ -22,11 +33,13 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
@@ -55,6 +68,8 @@ dependencies {
     implementation(libs.com.google.firebase.firebase.auth.ktx)
     implementation(libs.firebase.firestore.ktx)
     implementation(libs.google.firebase.storage.ktx)
+    implementation(libs.firebase.analytics) // Firebase Analytics eklendi
+    implementation("com.google.firebase:firebase-crashlytics-ktx")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -64,11 +79,8 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation("com.google.mlkit:barcode-scanning:17.2.0")
-    implementation("androidx.camera:camera-camera2:1.3.1")
-    implementation("androidx.camera:camera-lifecycle:1.3.1")
-    implementation("androidx.camera:camera-view:1.3.1")
-    implementation("com.google.accompanist:accompanist-permissions:0.32.0")
+    // ZXing kütüphanesi QR kod oluşturmak için
+    implementation("com.google.zxing:core:3.5.3")
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation(libs.core)
     // Firebase SDK
@@ -83,4 +95,7 @@ dependencies {
     
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+    
+    // AppCompat for language support
+    implementation("androidx.appcompat:appcompat:1.6.1")
 }

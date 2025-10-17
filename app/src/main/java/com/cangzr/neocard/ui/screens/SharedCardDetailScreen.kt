@@ -1,3 +1,5 @@
+package com.cangzr.neocard.ui.screens
+
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
@@ -7,7 +9,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -23,6 +25,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.cangzr.neocard.R
 import com.cangzr.neocard.ui.screens.UserCard
@@ -32,6 +35,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 import coil.request.ImageRequest
 import coil.transform.CircleCropTransformation
 import coil.size.Size
+import com.cangzr.neocard.analytics.CardAnalyticsManager
+
+// CompositionLocal değişkenleri
+val LocalCardId = compositionLocalOf<String?> { null }
+val LocalCardOwnerId = compositionLocalOf<String?> { null }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,6 +73,13 @@ fun SharedCardDetailScreen(
                                 userCard = foundCard
                                 cardOwnerId = userDoc.id // 🔥 Kartın sahibinin Firestore kullanıcı ID'sini al
                                 isLoading = false
+                                
+                                // Kartvizit görüntülenme olayını kaydet
+                                CardAnalyticsManager.getInstance().logCardView(
+                                    cardId = cardId,
+                                    cardOwnerId = userDoc.id,
+                                    viewerUserId = auth.currentUser?.uid
+                                )
                             }
                         }
                         .addOnFailureListener {
@@ -113,12 +128,12 @@ fun SharedCardDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Kartvizit Detayı") },
+                title = { Text(context.getString(R.string.card_detail)) },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
+                    IconButton(onClick = { onBackClick() }) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Geri",
+                            contentDescription = context.getString(R.string.back),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -126,7 +141,7 @@ fun SharedCardDetailScreen(
                 actions = {
                     if (!isConnected) {
                         IconButton(onClick = {
-                            dialogMessage = "Bu kullanıcıya bağlantı isteği göndermek istiyor musunuz?"
+                            dialogMessage = context.getString(R.string.confirm_send_connection_request)
                             dialogAction = {
                                 sendConnectionRequest(
                                     auth.currentUser?.uid,  // 🔥 Gönderen kullanıcı ID'si
@@ -141,7 +156,7 @@ fun SharedCardDetailScreen(
                         }) {
                             Image(
                                 painter = painterResource(id = R.drawable.adduser),
-                                contentDescription = "Bağlantı Ekle",
+                                contentDescription = context.getString(R.string.add_connection),
                                 modifier = Modifier.size(24.dp),
                                 colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
                             )
@@ -149,7 +164,7 @@ fun SharedCardDetailScreen(
 
                     } else {
                         IconButton(onClick = {
-                            dialogMessage = "Bu bağlantıyı kaldırmak istiyor musunuz?"
+                            dialogMessage = context.getString(R.string.confirm_remove_connection)
                             dialogAction = {
                                 removeConnection(
                                     auth.currentUser?.uid, // 🔥 Mevcut kullanıcı ID
@@ -164,7 +179,7 @@ fun SharedCardDetailScreen(
                         }) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
-                                contentDescription = "Bağlantıyı Kaldır",
+                                contentDescription = context.getString(R.string.remove_connection),
                                 modifier = Modifier.size(24.dp),
                                 tint = Color.Red
                             )
@@ -181,57 +196,64 @@ fun SharedCardDetailScreen(
             }
         } else if (userCard == null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Kart bulunamadı.")
+                Text(context.getString(R.string.card_not_found))
             }
         } else {
             val card = userCard!!
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally
+            
+            // CompositionLocalProvider ile cardId ve cardOwnerId değerlerini alt bileşenlere aktar
+            CompositionLocalProvider(
+                LocalCardId provides card.id,
+                LocalCardOwnerId provides cardOwnerId
             ) {
-                // Profil resmi
-                Box(
+                Column(
                     modifier = Modifier
-                        .padding(vertical = 24.dp)
-                        .size(120.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.Center
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    if (card.profileImageUrl != null && card.profileImageUrl!!.isNotEmpty()) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(card.profileImageUrl)
-                                .crossfade(true)
-                                .size(Size.ORIGINAL)
-                                .placeholder(R.drawable.logo3)
-                                .error(R.drawable.logo3)
-                                .transformations(CircleCropTransformation())
-                                .build(),
-                            contentDescription = "Profil Resmi",
-                            modifier = Modifier
-                                .size(120.dp)
-                                .clip(CircleShape),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Default.AccountCircle,
-                            contentDescription = null,
-                            modifier = Modifier.size(80.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
+                    // Profil resmi
+                    Box(
+                        modifier = Modifier
+                            .padding(vertical = 24.dp)
+                            .size(120.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (card.profileImageUrl != null && card.profileImageUrl!!.isNotEmpty()) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(card.profileImageUrl)
+                                    .crossfade(true)
+                                    .size(Size.ORIGINAL)
+                                    .placeholder(R.drawable.logo3)
+                                    .error(R.drawable.logo3)
+                                    .transformations(CircleCropTransformation())
+                                    .build(),
+                                contentDescription = context.getString(R.string.profile_picture),
+                                modifier = Modifier
+                                    .size(120.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.AccountCircle,
+                                contentDescription = null,
+                                modifier = Modifier.size(80.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
-                }
 
-                // Kullanıcı Bilgileri
-                InfoDisplayColumn(
-                    card = card, 
-                    context = context
-                )
+                    // Kullanıcı Bilgileri
+                    InfoDisplayColumn(
+                        card = card, 
+                        context = context
+                    )
+                }
             }
         }
     }
@@ -239,19 +261,19 @@ fun SharedCardDetailScreen(
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
-            title = { Text("Onay Gerekli") },
+                            title = { Text(context.getString(R.string.confirmation_required)) },
             text = { Text(dialogMessage) },
             confirmButton = {
                 Button(onClick = {
                     dialogAction?.invoke()
                     showDialog = false
                 }) {
-                    Text("Evet")
+                    Text(context.getString(R.string.yes))
                 }
             },
             dismissButton = {
                 Button(onClick = { showDialog = false }) {
-                    Text("İptal")
+                    Text(context.getString(R.string.cancel))
                 }
             }
         )
@@ -286,7 +308,7 @@ fun InfoDisplayColumn(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Biyografi",
+                        text = context.getString(R.string.bio),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -309,7 +331,7 @@ fun InfoDisplayColumn(
                 }
                 context.startActivity(intent)
             } catch (e: Exception) {
-                Toast.makeText(context, "E-posta uygulaması açılamadı", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.email_app_error), Toast.LENGTH_SHORT).show()
             }
         }
         
@@ -320,7 +342,7 @@ fun InfoDisplayColumn(
                 }
                 context.startActivity(intent)
             } catch (e: Exception) {
-                Toast.makeText(context, "Telefon uygulaması açılamadı", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.phone_app_error), Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -334,14 +356,14 @@ fun InfoDisplayColumn(
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(webUrl))
                     context.startActivity(intent)
                 } catch (e: Exception) {
-                    Toast.makeText(context, "Web sitesi açılamadı", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.website_open_error), Toast.LENGTH_SHORT).show()
                 }
             }
         }
         
         // CV alanı
         if (card.cv?.isNotEmpty() == true) {
-            InfoItem(R.drawable.document, "CV'yi Görüntüle") {
+            InfoItem(R.drawable.document, context.getString(R.string.view_cv)) {
                 try {
                     var cvUrl = card.cv
                     if (!cvUrl.startsWith("http://") && !cvUrl.startsWith("https://")) {
@@ -350,7 +372,7 @@ fun InfoDisplayColumn(
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(cvUrl))
                     context.startActivity(intent)
                 } catch (e: Exception) {
-                    Toast.makeText(context, "CV linki açılamadı", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.cv_open_error), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -359,22 +381,42 @@ fun InfoDisplayColumn(
 
         // Sosyal Medya İkonları
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (card.linkedin.isNotEmpty()) SocialMediaIconButton(R.drawable.linkedin, "LinkedIn", formatSocialUrl(card.linkedin, "linkedin.com"), context)
-            if (card.github.isNotEmpty()) SocialMediaIconButton(R.drawable.github, "GitHub", formatSocialUrl(card.github, "github.com"), context)
-            if (card.twitter.isNotEmpty()) SocialMediaIconButton(R.drawable.twitt, "Twitter", formatSocialUrl(card.twitter, "twitter.com"), context)
-            if (card.instagram.isNotEmpty()) SocialMediaIconButton(R.drawable.insta, "Instagram", formatSocialUrl(card.instagram, "instagram.com"), context)
-            if (card.facebook.isNotEmpty()) SocialMediaIconButton(R.drawable.face, "Facebook", formatSocialUrl(card.facebook, "facebook.com"), context)
+            if (card.linkedin.isNotEmpty()) SharedCardSocialMediaIconButton(R.drawable.linkedin, "LinkedIn", formatSharedSocialUrl(card.linkedin, "linkedin.com"), context)
+            if (card.github.isNotEmpty()) SharedCardSocialMediaIconButton(R.drawable.github, "GitHub", formatSharedSocialUrl(card.github, "github.com"), context)
+            if (card.twitter.isNotEmpty()) SharedCardSocialMediaIconButton(R.drawable.twitt, "Twitter", formatSharedSocialUrl(card.twitter, "twitter.com"), context)
+            if (card.instagram.isNotEmpty()) SharedCardSocialMediaIconButton(R.drawable.insta, "Instagram", formatSharedSocialUrl(card.instagram, "instagram.com"), context)
+            if (card.facebook.isNotEmpty()) SharedCardSocialMediaIconButton(R.drawable.face, "Facebook", formatSharedSocialUrl(card.facebook, "facebook.com"), context)
         }
     }
 }
 
 @Composable
 fun InfoItem(iconRes: Int, text: String, onClick: () -> Unit) {
+    val cardId = (LocalCardId.current ?: "")
+    val cardOwnerId = LocalCardOwnerId.current ?: ""
+    
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp)
-            .clickable { onClick() },
+            .clickable { 
+                // Link tıklanma olayını kaydet
+                val linkType = when (iconRes) {
+                    R.drawable.email -> "email"
+                    R.drawable.phone -> "phone"
+                    R.drawable.web -> "website"
+                    R.drawable.document -> "cv"
+                    else -> "other"
+                }
+                
+                CardAnalyticsManager.getInstance().logLinkClick(
+                    cardId = cardId,
+                    linkType = linkType,
+                    viewerUserId = FirebaseAuth.getInstance().currentUser?.uid
+                )
+                
+                onClick() 
+            },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
@@ -385,6 +427,35 @@ fun InfoItem(iconRes: Int, text: String, onClick: () -> Unit) {
         )
         Spacer(modifier = Modifier.width(16.dp))
         Text(text, style = MaterialTheme.typography.bodyLarge)
+    }
+}
+
+@Composable
+fun SharedCardSocialMediaIconButton(iconRes: Int, contentDescription: String, url: String, context: android.content.Context) {
+    val cardId = (LocalCardId.current ?: "")
+    val cardOwnerId = LocalCardOwnerId.current ?: ""
+    
+    IconButton(onClick = { 
+        try {
+            // Link tıklanma olayını kaydet
+            CardAnalyticsManager.getInstance().logLinkClick(
+                cardId = cardId,
+                linkType = contentDescription.lowercase(),
+                viewerUserId = FirebaseAuth.getInstance().currentUser?.uid
+            )
+            
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(context, context.getString(R.string.link_open_error, url), Toast.LENGTH_SHORT).show()
+        }
+    }) {
+        Icon(
+            painter = painterResource(id = iconRes),
+            contentDescription = contentDescription,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        )
     }
 }
 
@@ -415,8 +486,8 @@ fun sendConnectionRequest(
                     // Bildirim oluştur
                     val notification = Notification(
                         userId = targetUserId,
-                        title = "Yeni Bağlantı İsteği",
-                        message = "${senderCard?.name} ${senderCard?.surname} size bağlantı isteği gönderdi",
+                        title = context.getString(R.string.new_connection_request),
+                        message = context.getString(R.string.connection_request_message, "${senderCard?.name} ${senderCard?.surname}"),
                         type = "CONNECTION_REQUEST",
                         relatedId = cardId
                     )
@@ -431,7 +502,7 @@ fun sendConnectionRequest(
                                 .update("notifications", FieldValue.arrayUnion(notificationRef.id))
                         }
 
-                    Toast.makeText(context, "Bağlantı isteği gönderildi!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.connection_request_sent), Toast.LENGTH_SHORT).show()
                     onSuccess()
                 }
         }
@@ -456,7 +527,7 @@ fun removeConnection(
             firestore.collection("users").document(targetUserId)
                 .update("connected", FieldValue.arrayRemove(mapOf("userId" to currentUserId, "cardId" to cardId)))
                 .addOnSuccessListener {
-                    Toast.makeText(context, "Bağlantı başarıyla kaldırıldı!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.connection_removed), Toast.LENGTH_SHORT).show()
                     onSuccess()
                 }
         }
@@ -474,3 +545,11 @@ data class Notification(
     val createdAt: Long = System.currentTimeMillis()
 )
 
+// Sosyal medya URL'lerini düzenleme
+fun formatSharedSocialUrl(url: String, domain: String): String {
+    return when {
+        url.startsWith("http://") || url.startsWith("https://") -> url
+        url.contains(domain) -> "https://$url"
+        else -> "https://$domain/$url"
+    }
+}

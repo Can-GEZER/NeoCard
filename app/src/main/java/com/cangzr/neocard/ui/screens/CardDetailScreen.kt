@@ -1,10 +1,11 @@
+package com.cangzr.neocard.ui.screens
+
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,9 +25,19 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
+// removed BarChart to avoid unresolved icon; using Info instead
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -39,8 +50,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -55,12 +64,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.cangzr.neocard.R
 import com.cangzr.neocard.data.CardType
 import com.cangzr.neocard.ui.screens.UserCard
 import com.cangzr.neocard.billing.BillingManager
+import com.cangzr.neocard.analytics.CardAnalyticsManager
+import com.cangzr.neocard.analytics.CardStatistics
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import coil.compose.AsyncImage
@@ -68,18 +80,25 @@ import coil.request.ImageRequest
 import coil.transform.CircleCropTransformation
 import coil.size.Size
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
+import com.cangzr.neocard.Screen
 import com.cangzr.neocard.storage.FirebaseStorageManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+// no custom extensions for icons
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CardDetailScreen(
     cardId: String,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    navController: NavHostController = rememberNavController()
 ) {
     val auth = FirebaseAuth.getInstance()
     val firestore = FirebaseFirestore.getInstance()
@@ -101,6 +120,9 @@ fun CardDetailScreen(
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var bio by remember { mutableStateOf(userCard?.bio ?: "") }
     var cv by remember { mutableStateOf(userCard?.cv ?: "") }
+    var showStatistics by remember { mutableStateOf(false) }
+    var cardStatistics by remember { mutableStateOf<CardStatistics?>(null) }
+    var isLoadingStats by remember { mutableStateOf(false) }
     
     // Değişkenleri önce tanımlayalım
     var name by remember { mutableStateOf(userCard?.name ?: "") }
@@ -125,6 +147,23 @@ fun CardDetailScreen(
             }
         }
     )
+
+    // İstatistikleri yükleme fonksiyonu (önce tanımla, sonra çağır)
+    fun loadCardStatistics(cardId: String, ownerId: String) {
+        isLoadingStats = true
+        CardAnalyticsManager.getInstance().getCardStatistics(
+            cardId = cardId,
+            onSuccess = { stats ->
+                cardStatistics = stats
+                isLoadingStats = false
+            },
+            onError = { e ->
+                errorMessage = context.getString(R.string.statistics_load_error, e.message)
+                showErrorMessage = true
+                isLoadingStats = false
+            }
+        )
+    }
 
     // İlk açılışta veriyi çek
     LaunchedEffect(cardId) {
@@ -155,14 +194,20 @@ fun CardDetailScreen(
                         cv = card.cv
                     }
                     isLoading = false
+                    
+                    // Premium ise istatistikleri yükle
+                    if (isPremium) {
+                        loadCardStatistics(cardId, user.uid)
+                    }
                 }
                 .addOnFailureListener { e ->
-                    errorMessage = "Kartvizit yüklenirken hata oluştu: ${e.localizedMessage}"
+                    errorMessage = context.getString(R.string.card_load_error, e.localizedMessage)
                     showErrorMessage = true
                     isLoading = false
                 }
         }
     }
+
 
     // Başarı mesajı gösterimi
     if (showSuccessMessage) {
@@ -188,7 +233,7 @@ fun CardDetailScreen(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator()
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Kartvizit yükleniyor...")
+                Text(context.getString(R.string.loading_card))
             }
         }
         return
@@ -200,15 +245,15 @@ fun CardDetailScreen(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(
                     painter = painterResource(id = R.drawable.info),
-                    contentDescription = "Hata",
+                    contentDescription = context.getString(R.string.error),
                     tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(64.dp)
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Kartvizit bulunamadı", style = MaterialTheme.typography.titleLarge)
+                Text(context.getString(R.string.card_not_found), style = MaterialTheme.typography.titleLarge)
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(onClick = onBackClick) {
-                    Text("Geri Dön")
+                Button(onClick = { onBackClick() }) {
+                    Text(context.getString(R.string.go_back))
                 }
             }
         }
@@ -226,32 +271,32 @@ fun CardDetailScreen(
     // Validasyon fonksiyonları
     fun validateName(value: String): String? {
         return when {
-            value.isEmpty() -> "Ad alanı boş olamaz"
-            value.length < 2 -> "Ad en az 2 karakter olmalıdır"
+            value.isEmpty() -> context.getString(R.string.name_empty)
+            value.length < 2 -> context.getString(R.string.name_min_length)
             else -> null
         }
     }
 
     fun validateSurname(value: String): String? {
         return when {
-            value.isEmpty() -> "Soyad alanı boş olamaz"
-            value.length < 2 -> "Soyad en az 2 karakter olmalıdır"
+            value.isEmpty() -> context.getString(R.string.surname_empty)
+            value.length < 2 -> context.getString(R.string.surname_min_length)
             else -> null
         }
     }
 
     fun validatePhone(value: String): String? {
         return when {
-            value.isEmpty() -> "Telefon alanı boş olamaz"
-            !android.util.Patterns.PHONE.matcher(value).matches() -> "Geçerli bir telefon numarası giriniz"
+            value.isEmpty() -> context.getString(R.string.phone_empty)
+            !android.util.Patterns.PHONE.matcher(value).matches() -> context.getString(R.string.phone_invalid)
             else -> null
         }
     }
 
     fun validateEmail(value: String): String? {
         return when {
-            value.isEmpty() -> "E-posta alanı boş olamaz"
-            !android.util.Patterns.EMAIL_ADDRESS.matcher(value).matches() -> "Geçerli bir e-posta adresi giriniz"
+            value.isEmpty() -> context.getString(R.string.email_empty)
+            !android.util.Patterns.EMAIL_ADDRESS.matcher(value).matches() -> context.getString(R.string.email_invalid)
             else -> null
         }
     }
@@ -268,8 +313,8 @@ fun CardDetailScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Kartviziti Sil") },
-            text = { Text("Bu kartviziti silmek istediğinizden emin misiniz?") },
+            title = { Text(context.getString(R.string.delete_card)) },
+            text = { Text(context.getString(R.string.confirm_delete)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -304,7 +349,7 @@ fun CardDetailScreen(
                                                             withContext(Dispatchers.Main) {
                                             isDeleting = false
                                             showDeleteDialog = false
-                                            successMessage = "Kartvizit başarıyla silindi"
+                                            successMessage = context.getString(R.string.card_deleted)
                                             showSuccessMessage = true
                                             onBackClick()
                                                             }
@@ -312,7 +357,7 @@ fun CardDetailScreen(
                                                     } else {
                                                         isDeleting = false
                                                         showDeleteDialog = false
-                                                        successMessage = "Kartvizit başarıyla silindi"
+                                                        successMessage = context.getString(R.string.card_deleted)
                                                         showSuccessMessage = true
                                                         onBackClick()
                                                     }
@@ -349,11 +394,11 @@ fun CardDetailScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                     }
-                    Text("Sil")
+                    Text(context.getString(R.string.delete))
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("İptal") }
+                TextButton(onClick = { showDeleteDialog = false }) { Text(context.getString(R.string.cancel)) }
             }
         )
     }
@@ -361,15 +406,15 @@ fun CardDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Kartvizit Detayı") },
+                title = { Text(context.getString(R.string.card_detail)) },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, "Geri")
+                    IconButton(onClick = { onBackClick() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = context.getString(R.string.back))
                     }
                 },
                 actions = {
                     IconButton(onClick = { showDeleteDialog = true }, enabled = !isSaving) {
-                        Icon(Icons.Default.Delete, "Sil", tint = MaterialTheme.colorScheme.error)
+                        Icon(Icons.Default.Delete, contentDescription = context.getString(R.string.delete), tint = MaterialTheme.colorScheme.error)
                     }
                     IconButton(onClick = {
                         if (isEditing) {
@@ -426,18 +471,18 @@ fun CardDetailScreen(
                                                                         userCard = card
                                                                         isSaving = false
                                                                         isEditing = false
-                                                                        successMessage = "Kartvizit başarıyla güncellendi"
+                                                                        successMessage = context.getString(R.string.card_updated)
                                                                         showSuccessMessage = true
                                                                     }
                                                                     .addOnFailureListener { e ->
                                                                         isSaving = false
-                                                                        errorMessage = "Kartvizit güncellenirken hata oluştu: ${e.localizedMessage}"
+                                                                        errorMessage = context.getString(R.string.update_error, e.localizedMessage)
                                                                         showErrorMessage = true
                                                                     }
                                                             }
                                                             .addOnFailureListener { e ->
                                                                 isSaving = false
-                                                                errorMessage = "Kartvizit güncellenirken hata oluştu: ${e.localizedMessage}"
+                                                                errorMessage = context.getString(R.string.update_error, e.localizedMessage)
                                                                 showErrorMessage = true
                                                             }
                                                     }
@@ -445,7 +490,7 @@ fun CardDetailScreen(
                                             }
                                             .addOnFailureListener { e ->
                                                 isSaving = false
-                                                errorMessage = "Profil resmi yüklenirken hata oluştu: ${e.localizedMessage}"
+                                                errorMessage = context.getString(R.string.profile_image_upload_error, e.localizedMessage)
                                                 showErrorMessage = true
                                             }
                                     } else {
@@ -470,12 +515,12 @@ fun CardDetailScreen(
                                                             userCard = card
                                                             isSaving = false
                                                             isEditing = false
-                                                            successMessage = "Kartvizit başarıyla güncellendi"
+                                                            successMessage = context.getString(R.string.card_updated)
                                                             showSuccessMessage = true
                                                         }
                                                         .addOnFailureListener { e ->
                                                             isSaving = false
-                                                            errorMessage = "Kartvizit güncellenirken hata oluştu: ${e.localizedMessage}"
+                                                            errorMessage = context.getString(R.string.update_error, e.localizedMessage)
                                                             showErrorMessage = true
                                                         }
                                                 }
@@ -500,7 +545,7 @@ fun CardDetailScreen(
                         } else {
                             Icon(
                                 if (isEditing) Icons.Default.Done else Icons.Default.Edit,
-                                if (isEditing) "Kaydet" else "Düzenle"
+                                contentDescription = if (isEditing) context.getString(R.string.save) else context.getString(R.string.edit)
                             )
                         }
                     }
@@ -515,6 +560,62 @@ fun CardDetailScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // İstatistik başlığı ve kartı (yalnızca premium)
+            if (isPremium) {
+                ExpandableStatisticsHeader(
+                    isExpanded = showStatistics,
+                    onToggle = { showStatistics = !showStatistics }
+                ) {
+                    StatisticsCard(
+                        statistics = cardStatistics,
+                        isLoading = isLoadingStats,
+                        onRefresh = { loadCardStatistics(cardId, currentUser?.uid ?: "") }
+                    )
+                }
+            } else {
+                // Premium olmayanlar için bilgi kartı
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = context.getString(R.string.statistics),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = context.getString(R.string.statistics_premium_only),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Button(onClick = { 
+                            // Profil ekranına yönlendirerek premium satın alma akışına götürebiliriz
+                            navController.navigate(Screen.Profile.route)
+                            {
+                                popUpTo(Screen.Profile.route) { inclusive = true }}
+                        }) {
+                            Text(context.getString(R.string.get_premium))
+                        }
+                    }
+                }
+            }
+            
             // Profil resmi
             Box(
                 modifier = Modifier
@@ -537,7 +638,7 @@ fun CardDetailScreen(
                             .size(Size.ORIGINAL)
                             .transformations(CircleCropTransformation())
                             .build(),
-                        contentDescription = "Profil Resmi",
+                            contentDescription = context.getString(R.string.profile_picture),
                         modifier = Modifier
                             .size(120.dp)
                             .clip(CircleShape),
@@ -553,7 +654,7 @@ fun CardDetailScreen(
                             .error(R.drawable.logo3)
                             .transformations(CircleCropTransformation())
                             .build(),
-                        contentDescription = "Profil Resmi",
+                            contentDescription = context.getString(R.string.profile_picture),
                         modifier = Modifier
                             .size(120.dp)
                             .clip(CircleShape),
@@ -572,7 +673,7 @@ fun CardDetailScreen(
                     ) {
                         Icon(
                             Icons.Default.Edit,
-                            contentDescription = "Resim Değiştir",
+                            contentDescription = context.getString(R.string.change_image),
                             tint = Color.White,
                             modifier = Modifier.size(32.dp)
                         )
@@ -680,7 +781,7 @@ fun SocialMediaIconButton(iconRes: Int, contentDescription: String, url: String,
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
             context.startActivity(intent)
         } catch (e: Exception) {
-            Toast.makeText(context, "Link açılamadı: $url", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.link_open_error, url), Toast.LENGTH_SHORT).show()
         }
     }) {
         Icon(
@@ -733,7 +834,7 @@ fun InfoDisplayColumn(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Biyografi",
+                        text = context.getString(R.string.bio),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -756,7 +857,7 @@ fun InfoDisplayColumn(
                 }
                 context.startActivity(intent)
             } catch (e: Exception) {
-                Toast.makeText(context, "E-posta uygulaması açılamadı", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.email_app_error), Toast.LENGTH_SHORT).show()
             }
         }
         
@@ -767,7 +868,7 @@ fun InfoDisplayColumn(
                 }
                 context.startActivity(intent)
             } catch (e: Exception) {
-                Toast.makeText(context, "Telefon uygulaması açılamadı", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.phone_app_error), Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -781,13 +882,13 @@ fun InfoDisplayColumn(
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(webUrl))
                     context.startActivity(intent)
                 } catch (e: Exception) {
-                    Toast.makeText(context, "Web sitesi açılamadı", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.website_open_error), Toast.LENGTH_SHORT).show()
                 }
             }
         }
         
         if (cv.isNotEmpty()) {
-            InfoItem(R.drawable.document, "CV'mi Görüntüle") {
+            InfoItem(R.drawable.document, context.getString(R.string.view_cv)) {
                 try {
                     var cvUrl = cv
                     if (!cvUrl.startsWith("http://") && !cvUrl.startsWith("https://")) {
@@ -796,7 +897,7 @@ fun InfoDisplayColumn(
                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(cvUrl))
                     context.startActivity(intent)
                 } catch (e: Exception) {
-                    Toast.makeText(context, "CV linki açılamadı", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.cv_open_error), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -849,6 +950,315 @@ fun formatSocialUrl(url: String, domain: String): String {
 }
 
 @Composable
+fun StatisticsCard(
+    statistics: CardStatistics?,
+    isLoading: Boolean,
+    onRefresh: () -> Unit
+) {
+    val context = LocalContext.current
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            // Başlık ve Yenile butonu
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                            text = context.getString(R.string.card_statistics),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                
+                IconButton(
+                    onClick = onRefresh,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                                        contentDescription = context.getString(R.string.refresh),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            if (isLoading) {
+                // Yükleniyor göstergesi
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(32.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 2.dp
+                    )
+                }
+            } else if (statistics == null) {
+                // İstatistik yok
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(32.dp)
+                        )
+                        
+                        Text(
+                            text = context.getString(R.string.no_statistics),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            } else {
+                // İstatistik özeti
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    StatItem(
+                        title = context.getString(R.string.views),
+                        value = "${statistics.totalViews}",
+                        iconRes = R.drawable.eye,
+                        modifier = Modifier.weight(1f)
+                    )
+                    
+                    StatItem(
+                        title = context.getString(R.string.unique_visitors),
+                        value = "${statistics.uniqueViewers}",
+                        iconRes = R.drawable.person,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    StatItem(
+                        title = context.getString(R.string.link_clicks),
+                        value = "${statistics.linkClicks}",
+                        iconRes = R.drawable.web,
+                        modifier = Modifier.weight(1f)
+                    )
+                    
+                    StatItem(
+                        title = context.getString(R.string.qr_scans),
+                        value = "${statistics.qrScans}",
+                        iconRes = R.drawable.qr_code,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                
+                // Link tıklamaları detayı
+                if (statistics.linkClicksByType.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Text(
+                        text = context.getString(R.string.most_clicked_links),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    // En çok tıklanan 3 linki göster
+                    statistics.linkClicksByType.entries
+                        .sortedByDescending { it.value }
+                        .take(3)
+                        .forEach { (type, count) ->
+                            val iconRes = when (type.lowercase()) {
+                                "email" -> R.drawable.email
+                                "phone" -> R.drawable.phone
+                                "website" -> R.drawable.web
+                                "linkedin" -> R.drawable.linkedin
+                                "github" -> R.drawable.github
+                                "twitter" -> R.drawable.twitt
+                                "instagram" -> R.drawable.insta
+                                "facebook" -> R.drawable.face
+                                "cv" -> R.drawable.document
+                                else -> R.drawable.web
+                            }
+                            
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = iconRes),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    
+                                    Text(
+                                        text = type.replaceFirstChar { it.uppercase() },
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                                
+                                Text(
+                                    text = "$count",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ExpandableStatisticsHeader(
+    isExpanded: Boolean,
+    onToggle: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    val context = LocalContext.current
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Başlık ve ok ikonu
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onToggle() }
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    
+                    Spacer(modifier = Modifier.width(8.dp))
+                    
+                    Text(
+                            text = context.getString(R.string.card_statistics),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                
+                Icon(
+                                imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                contentDescription = if (isExpanded) context.getString(R.string.collapse) else context.getString(R.string.expand),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+            
+            // Animasyonlu içerik
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                ) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun StatItem(
+    title: String,
+    value: String,
+    iconRes: Int,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.padding(horizontal = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            painter = painterResource(id = iconRes),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp)
+        )
+        
+        Spacer(modifier = Modifier.height(4.dp))
+        
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
 fun InfoEditColumn(
     name: String,
     surname: String,
@@ -884,15 +1294,16 @@ fun InfoEditColumn(
     onCvChange: (String) -> Unit = {},
     isPremium: Boolean = false
 ) {
+    val context = LocalContext.current
     Column(
         modifier = Modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        FormCard("Kişisel Bilgiler") {
+        FormCard(context.getString(R.string.personal_info)) {
             OutlinedTextField(
                 value = name, 
                 onValueChange = onNameChange, 
-                label = { Text("Ad") },
+                label = { Text(context.getString(R.string.name)) },
                 isError = nameError != null,
                 supportingText = { nameError?.let { Text(it) } },
                 modifier = Modifier.fillMaxWidth()
@@ -900,7 +1311,7 @@ fun InfoEditColumn(
             OutlinedTextField(
                 value = surname, 
                 onValueChange = onSurnameChange, 
-                label = { Text("Soyad") },
+                label = { Text(context.getString(R.string.surname)) },
                 isError = surnameError != null,
                 supportingText = { surnameError?.let { Text(it) } },
                 modifier = Modifier.fillMaxWidth()
@@ -909,8 +1320,8 @@ fun InfoEditColumn(
                 OutlinedTextField(
                     value = bio, 
                     onValueChange = onBioChange, 
-                    label = { Text("Biyografi") },
-                    placeholder = { Text("Kısa bir biyografi yazın...") },
+                    label = { Text(context.getString(R.string.bio)) },
+                    placeholder = { Text(context.getString(R.string.biography_placeholder)) },
                     modifier = Modifier.fillMaxWidth().height(150.dp),
                     maxLines = 6
                 )
@@ -933,7 +1344,7 @@ fun InfoEditColumn(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Biyografi özelliği sadece premium üyelere özeldir",
+                            text = context.getString(R.string.biography_premium_only),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -942,25 +1353,25 @@ fun InfoEditColumn(
                 }
             }
         }
-        FormCard("İş Bilgileri") {
+        FormCard(context.getString(R.string.work_info)) {
             OutlinedTextField(
                 value = title, 
                 onValueChange = onTitleChange, 
-                label = { Text("Ünvan") },
+                label = { Text(context.getString(R.string.title)) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = company, 
                 onValueChange = onCompanyChange, 
-                label = { Text("Şirket") },
+                label = { Text(context.getString(R.string.company)) },
                 modifier = Modifier.fillMaxWidth()
             )
             if (isPremium) {
                 OutlinedTextField(
                     value = cv, 
                     onValueChange = onCvChange, 
-                    label = { Text("CV Linki") },
-                    placeholder = { Text("CV'nize ulaşılabilecek bir bağlantı") },
+                    label = { Text(context.getString(R.string.cv_link)) },
+                    placeholder = { Text(context.getString(R.string.cv_placeholder)) },
                     modifier = Modifier.fillMaxWidth()
                 )
             } else {
@@ -982,7 +1393,7 @@ fun InfoEditColumn(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "CV özelliği sadece premium üyelere özeldir",
+                            text = context.getString(R.string.cv_premium_only),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -991,11 +1402,11 @@ fun InfoEditColumn(
                 }
             }
         }
-        FormCard("İletişim Bilgileri") {
+        FormCard(context.getString(R.string.contact_info)) {
             OutlinedTextField(
                 value = phone, 
                 onValueChange = onPhoneChange, 
-                label = { Text("Telefon") },
+                label = { Text(context.getString(R.string.phone)) },
                 isError = phoneError != null,
                 supportingText = { phoneError?.let { Text(it) } },
                 modifier = Modifier.fillMaxWidth()
@@ -1003,7 +1414,7 @@ fun InfoEditColumn(
             OutlinedTextField(
                 value = email, 
                 onValueChange = onEmailChange, 
-                label = { Text("E-posta") },
+                label = { Text(context.getString(R.string.email)) },
                 isError = emailError != null,
                 supportingText = { emailError?.let { Text(it) } },
                 modifier = Modifier.fillMaxWidth()
@@ -1011,44 +1422,44 @@ fun InfoEditColumn(
             OutlinedTextField(
                 value = website, 
                 onValueChange = onWebsiteChange, 
-                label = { Text("Web Sitesi") },
+                label = { Text(context.getString(R.string.website)) },
                 modifier = Modifier.fillMaxWidth()
             )
         }
-        FormCard("Sosyal Medya") {
+        FormCard(context.getString(R.string.social_media)) {
             OutlinedTextField(
                 value = linkedin, 
                 onValueChange = onLinkedinChange, 
-                label = { Text("LinkedIn") },
-                placeholder = { Text("kullanıcıadı veya tam URL") },
+                label = { Text(context.getString(R.string.linkedin)) },
+                placeholder = { Text(context.getString(R.string.username_or_url)) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = github, 
                 onValueChange = onGithubChange, 
-                label = { Text("GitHub") },
-                placeholder = { Text("kullanıcıadı veya tam URL") },
+                label = { Text(context.getString(R.string.github)) },
+                placeholder = { Text(context.getString(R.string.username_or_url)) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = twitter, 
                 onValueChange = onTwitterChange, 
-                label = { Text("Twitter") },
-                placeholder = { Text("kullanıcıadı veya tam URL") },
+                label = { Text(context.getString(R.string.twitter)) },
+                placeholder = { Text(context.getString(R.string.username_or_url)) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = instagram, 
                 onValueChange = onInstagramChange, 
-                label = { Text("Instagram") },
-                placeholder = { Text("kullanıcıadı veya tam URL") },
+                label = { Text(context.getString(R.string.instagram)) },
+                placeholder = { Text(context.getString(R.string.username_or_url)) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = facebook, 
                 onValueChange = onFacebookChange, 
-                label = { Text("Facebook") },
-                placeholder = { Text("kullanıcıadı veya tam URL") },
+                label = { Text(context.getString(R.string.facebook)) },
+                placeholder = { Text(context.getString(R.string.username_or_url)) },
                 modifier = Modifier.fillMaxWidth()
             )
         }

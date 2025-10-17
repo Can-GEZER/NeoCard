@@ -1,25 +1,45 @@
 package com.cangzr.neocard.ui.screens
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import android.content.Context
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import coil.size.Size
+import coil.transform.CircleCropTransformation
 import androidx.navigation.NavHostController
 import com.cangzr.neocard.R
+import com.cangzr.neocard.Screen
 import com.cangzr.neocard.ads.AdManager
 import com.cangzr.neocard.ads.InlineAdView
 import com.cangzr.neocard.ads.withAdItems
+import com.cangzr.neocard.data.model.UserCard
+import com.cangzr.neocard.data.model.TextStyleDTO
+import com.cangzr.neocard.ui.screens.getPredefinedGradients
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -34,63 +54,66 @@ data class TagCategory(
     val tags: List<String>
 )
 
-val PREDEFINED_TAG_CATEGORIES = listOf(
-    TagCategory(
-        "İş İlişkileri",
-        listOf(
-            "Müşteri",
-            "VIP Müşteri",
-            "Potansiyel Müşteri",
-            "Tedarikçi",
-            "Stratejik Tedarikçi",
-            "İş Ortağı",
-            "Stratejik İş Ortağı",
-            "Çalışan",
-            "Yönetici",
-            "Yatırımcı",
-            "Potansiyel Yatırımcı",
-            "Danışman",
-            "Stratejik Danışman",
-            "Mentor",
-            "Mentee"
-        )
-    ),
-    TagCategory(
-        "Meslek Grupları",
-        listOf(
-            "Yazılım Geliştirici",
-            "Sistem Mühendisi",
-            "Veri Mühendisi",
-            "UI/UX Tasarımcı",
-            "Grafik Tasarımcı",
-            "Proje Yöneticisi",
-            "Ürün Yöneticisi",
-            "Pazarlama Uzmanı",
-            "Satış Temsilcisi",
-            "İK Uzmanı",
-            "Finans Uzmanı",
-            "Muhasebeci",
-            "Avukat",
-            "Doktor",
-            "Öğretmen",
-            "Akademisyen",
-            "Mimar",
-            "İnşaat Mühendisi",
-            "Makine Mühendisi",
-            "Elektrik Mühendisi"
-        )
-    ),
-    TagCategory(
-        "Diğer İlişkiler",
-        listOf(
-            "Aile",
-            "Arkadaş",
-            "Komşu",
-            "Öğrenci",
-            "Diğer"
+@Composable
+fun getPredefinedTagCategories(context: Context): List<TagCategory> {
+    return listOf(
+        TagCategory(
+            context.getString(R.string.tag_category_business_relations),
+            listOf(
+                context.getString(R.string.tag_customer),
+                context.getString(R.string.tag_vip_customer),
+                context.getString(R.string.tag_potential_customer),
+                context.getString(R.string.tag_supplier),
+                context.getString(R.string.tag_strategic_supplier),
+                context.getString(R.string.tag_business_partner),
+                context.getString(R.string.tag_strategic_partner),
+                context.getString(R.string.tag_employee),
+                context.getString(R.string.tag_manager),
+                context.getString(R.string.tag_investor),
+                context.getString(R.string.tag_potential_investor),
+                context.getString(R.string.tag_consultant),
+                context.getString(R.string.tag_strategic_consultant),
+                context.getString(R.string.tag_mentor),
+                context.getString(R.string.tag_mentee)
+            )
+        ),
+        TagCategory(
+            context.getString(R.string.tag_category_professions),
+            listOf(
+                context.getString(R.string.tag_software_developer),
+                context.getString(R.string.tag_system_engineer),
+                context.getString(R.string.tag_data_engineer),
+                context.getString(R.string.tag_ui_ux_designer),
+                context.getString(R.string.tag_graphic_designer),
+                context.getString(R.string.tag_project_manager),
+                context.getString(R.string.tag_product_manager),
+                context.getString(R.string.tag_marketing_specialist),
+                context.getString(R.string.tag_sales_representative),
+                context.getString(R.string.tag_hr_specialist),
+                context.getString(R.string.tag_finance_specialist),
+                context.getString(R.string.tag_accountant),
+                context.getString(R.string.tag_lawyer),
+                context.getString(R.string.tag_doctor),
+                context.getString(R.string.tag_teacher),
+                context.getString(R.string.tag_academic),
+                context.getString(R.string.tag_architect),
+                context.getString(R.string.tag_civil_engineer),
+                context.getString(R.string.tag_mechanical_engineer),
+                context.getString(R.string.tag_electrical_engineer)
+            )
+        ),
+        TagCategory(
+            context.getString(R.string.tag_category_other_relations),
+            listOf(
+                context.getString(R.string.tag_family),
+                context.getString(R.string.tag_friend),
+                context.getString(R.string.tag_neighbor),
+                context.getString(R.string.tag_student),
+                context.getString(R.string.tag_other)
+            )
         )
     )
-)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -172,11 +195,12 @@ fun BusinessCardListScreen(navController: NavHostController) {
     // Etiket seçim dialog'u
     if (showTagSelectionDialog != null) {
         var tagSearchQuery by remember { mutableStateOf("") }
+        val predefinedCategories = getPredefinedTagCategories(context)
         val filteredCategories = remember(tagSearchQuery) {
             if (tagSearchQuery.isEmpty()) {
-                PREDEFINED_TAG_CATEGORIES
+                predefinedCategories
             } else {
-                PREDEFINED_TAG_CATEGORIES.map { category ->
+                predefinedCategories.map { category ->
                     category.copy(
                         tags = category.tags.filter { it.contains(tagSearchQuery, ignoreCase = true) }
                     )
@@ -197,7 +221,7 @@ fun BusinessCardListScreen(navController: NavHostController) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Etiket Seç",
+                            text = context.getString(R.string.select_tags),
                             style = MaterialTheme.typography.titleLarge
                         )
                         Text(
@@ -207,7 +231,7 @@ fun BusinessCardListScreen(navController: NavHostController) {
                         )
                     }
                     Text(
-                        text = "En fazla 3 etiket seçebilirsiniz",
+                        text = context.getString(R.string.max_three_tags),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                     )
@@ -215,11 +239,11 @@ fun BusinessCardListScreen(navController: NavHostController) {
                         value = tagSearchQuery,
                         onValueChange = { tagSearchQuery = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Etiket ara...") },
+                        placeholder = { Text(context.getString(R.string.search_tags)) },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Search,
-                                contentDescription = "Ara",
+                                contentDescription = context.getString(R.string.search),
                                 modifier = Modifier.size(20.dp)
                             )
                         },
@@ -328,7 +352,7 @@ fun BusinessCardListScreen(navController: NavHostController) {
                         contentColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text("Tamam")
+                    Text(context.getString(R.string.ok))
                 }
             },
             containerColor = MaterialTheme.colorScheme.surface,
@@ -341,7 +365,7 @@ fun BusinessCardListScreen(navController: NavHostController) {
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
             Text(
-                text = "Bağlantılarım",
+                text = context.getString(R.string.my_connections),
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(vertical = 16.dp)
             )
@@ -353,11 +377,11 @@ fun BusinessCardListScreen(navController: NavHostController) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 8.dp),
-                placeholder = { Text("Kartvizit ara...") },
+                placeholder = { Text(context.getString(R.string.search_cards)) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Default.Search,
-                        contentDescription = "Ara"
+                        contentDescription = context.getString(R.string.search)
                     )
                 },
                 singleLine = true,
@@ -370,7 +394,7 @@ fun BusinessCardListScreen(navController: NavHostController) {
             // Etiket filtreleme
             if (allTagsWithCount.isNotEmpty()) {
                 Text(
-                    text = "Etiketlere Göre Filtrele",
+                    text = context.getString(R.string.filter_by_tags),
                     style = MaterialTheme.typography.titleSmall,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
@@ -407,7 +431,7 @@ fun BusinessCardListScreen(navController: NavHostController) {
                                 {
                                     Icon(
                                         imageVector = Icons.Default.Check,
-                                        contentDescription = "Seçili",
+                                        contentDescription = context.getString(R.string.selected),
                                         modifier = Modifier.size(16.dp)
                                     )
                                 }
@@ -429,7 +453,7 @@ fun BusinessCardListScreen(navController: NavHostController) {
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Bağlantılarınızı görmek için giriş yapmalısınız.",
+                        text = context.getString(R.string.login_to_see_connections),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         textAlign = TextAlign.Center
@@ -444,9 +468,9 @@ fun BusinessCardListScreen(navController: NavHostController) {
                 ) {
                     Text(
                         text = if (searchQuery.isEmpty()) 
-                            "Bağlantılarınızda kayıtlı bir kart bulunamadı."
+                            context.getString(R.string.no_cards_in_connections)
                         else 
-                            "Aramanızla eşleşen kart bulunamadı.",
+                            context.getString(R.string.no_search_results),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         textAlign = TextAlign.Center
@@ -461,7 +485,7 @@ fun BusinessCardListScreen(navController: NavHostController) {
                     itemContent = { cardWithTags ->
                         Box(modifier = Modifier.fillMaxWidth()) {
                             UserCardItem(card = cardWithTags.card) {
-                                navController.navigate("sharedCardDetail/${cardWithTags.card.id}")
+                                navController.navigate(Screen.SharedCardDetail.createRoute(cardWithTags.card.id))
                             }
                             
                             // Etiket rozeti
@@ -481,7 +505,7 @@ fun BusinessCardListScreen(navController: NavHostController) {
                                     ) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.ic_label),
-                                            contentDescription = "Etiket",
+                                            contentDescription = context.getString(R.string.tag),
                                             modifier = Modifier.size(16.dp),
                                             tint = MaterialTheme.colorScheme.onPrimaryContainer
                                         )
@@ -502,11 +526,11 @@ fun BusinessCardListScreen(navController: NavHostController) {
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_label),
-                                contentDescription = "Etiket Seç",
+                                contentDescription = context.getString(R.string.select_tags),
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Etiket Seç")
+                            Text(context.getString(R.string.select_tags))
                         }
                     },
                     adContent = {
@@ -578,4 +602,139 @@ fun fetchConnectedCards(
                 }
             }
     }
+}
+
+@Composable
+fun UserCardItem(card: UserCard, onClick: () -> Unit) {
+    val nameSurnameColor = Color(android.graphics.Color.parseColor(card.textStyles["NAME_SURNAME"]?.color ?: "#000000"))
+    val isDemoCard = card.id == "demo"
+    val context = LocalContext.current
+
+    Card(
+        modifier = Modifier
+            .width(300.dp)
+            .height(180.dp)
+            .clickable(enabled = !isDemoCard) { onClick() }
+            .alpha(if (isDemoCard) 0.7f else 1f),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .background(parseBusinessBackground(card, context))
+                .padding(16.dp)
+        ) {
+            Column(
+                verticalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth().fillMaxSize()
+            ) {
+                // Üst kısım: Profil resmi + Bilgiler
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    // Profil resmi (varsa göster)
+                    if (card.profileImageUrl!!.isNotEmpty()) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(card.profileImageUrl)
+                                .crossfade(true)
+                                .size(Size.ORIGINAL)
+                                .memoryCacheKey(card.profileImageUrl)
+                                .diskCacheKey(card.profileImageUrl)
+                                .placeholder(R.drawable.logo3)
+                                .error(R.drawable.logo3)
+                                .transformations(CircleCropTransformation())
+                                .build(),
+                            contentDescription = "Profil Resmi",
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+
+                    // Bilgiler
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("${card.name} ${card.surname}", style = parseBusinessTextStyle(card.textStyles["NAME_SURNAME"]))
+                        Text(card.title, style = parseBusinessTextStyle(card.textStyles["TITLE"]))
+                        Text(card.company, style = parseBusinessTextStyle(card.textStyles["COMPANY"]))
+                        Text(card.email, style = parseBusinessTextStyle(card.textStyles["EMAIL"]))
+                        Text(card.phone, style = parseBusinessTextStyle(card.textStyles["PHONE"]))
+                    }
+                }
+
+                // Alt kısım: Sosyal Medya İkonları (sola hizalı)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (card.website.isNotEmpty()) BusinessSocialIcon(R.drawable.web, nameSurnameColor)
+                    if (card.linkedin.isNotEmpty()) BusinessSocialIcon(R.drawable.linkedin, nameSurnameColor)
+                    if (card.github.isNotEmpty()) BusinessSocialIcon(R.drawable.github, nameSurnameColor)
+                    if (card.twitter.isNotEmpty()) BusinessSocialIcon(R.drawable.twitt, nameSurnameColor)
+                    if (card.instagram.isNotEmpty()) BusinessSocialIcon(R.drawable.insta, nameSurnameColor)
+                    if (card.facebook.isNotEmpty()) BusinessSocialIcon(R.drawable.face, nameSurnameColor)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun BusinessSocialIcon(iconRes: Int, color: Color) {
+    Image(
+        painter = painterResource(id = iconRes),
+        contentDescription = null,
+        modifier = Modifier.size(24.dp),
+        colorFilter = ColorFilter.tint(color)
+    )
+}
+
+fun parseBusinessBackground(card: UserCard, context: Context): Brush {
+    return if (card.backgroundType == "GRADIENT") {
+        // Önce mevcut dilde eşleşme ara
+        var gradient = getPredefinedGradients(context).firstOrNull { it.first == card.selectedGradient }
+        
+        // Eğer bulunamazsa, diğer dillerde ara
+        if (gradient == null) {
+            val allGradients = listOf(
+                Pair("Gün Batımı", Brush.horizontalGradient(listOf(Color(0xFFFE6B8B), Color(0xFFFF8E53)))),
+                Pair("Sunset", Brush.horizontalGradient(listOf(Color(0xFFFE6B8B), Color(0xFFFF8E53)))),
+                Pair("Okyanus", Brush.horizontalGradient(listOf(Color(0xFF2196F3), Color(0xFF00BCD4)))),
+                Pair("Ocean", Brush.horizontalGradient(listOf(Color(0xFF2196F3), Color(0xFF00BCD4)))),
+                Pair("Orman", Brush.horizontalGradient(listOf(Color(0xFF4CAF50), Color(0xFF8BC34A)))),
+                Pair("Forest", Brush.horizontalGradient(listOf(Color(0xFF4CAF50), Color(0xFF8BC34A)))),
+                Pair("Gece", Brush.verticalGradient(listOf(Color(0xFF2C3E50), Color(0xFF3498DB)))),
+                Pair("Night", Brush.verticalGradient(listOf(Color(0xFF2C3E50), Color(0xFF3498DB)))),
+                Pair("Mor Sis", Brush.verticalGradient(listOf(Color(0xFF9C27B0), Color(0xFFE91E63)))),
+                Pair("Purple Mist", Brush.verticalGradient(listOf(Color(0xFF9C27B0), Color(0xFFE91E63))))
+            )
+            gradient = allGradients.firstOrNull { it.first == card.selectedGradient }
+        }
+        
+        gradient?.second ?: Brush.verticalGradient(listOf(Color.Gray, Color.LightGray))
+    } else {
+        Brush.verticalGradient(
+            listOf(
+                Color(android.graphics.Color.parseColor(card.backgroundColor)),
+                Color(android.graphics.Color.parseColor(card.backgroundColor))
+            )
+        )
+    }
+}
+
+fun parseBusinessTextStyle(dto: TextStyleDTO?): androidx.compose.ui.text.TextStyle {
+    return androidx.compose.ui.text.TextStyle(
+        fontSize = (dto?.fontSize?.sp ?: 16.sp),
+        fontWeight = if (dto?.isBold == true) androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Normal,
+        fontStyle = if (dto?.isItalic == true) androidx.compose.ui.text.font.FontStyle.Italic else androidx.compose.ui.text.font.FontStyle.Normal,
+        textDecoration = if (dto?.isUnderlined == true) androidx.compose.ui.text.style.TextDecoration.Underline else androidx.compose.ui.text.style.TextDecoration.None,
+        color = Color(android.graphics.Color.parseColor(dto?.color ?: "#000000"))
+    )
 }

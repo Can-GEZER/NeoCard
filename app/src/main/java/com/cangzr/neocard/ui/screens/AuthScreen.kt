@@ -60,34 +60,38 @@ class AuthViewModel : ViewModel() {
     private val firestore = FirebaseFirestore.getInstance()
 
     fun validateEmail(email: String): String? {
+        val context = FirebaseAuth.getInstance().app.applicationContext
         return when {
-            email.isBlank() -> "E-posta adresi boş olamaz"
-            !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> "Geçerli bir e-posta adresi giriniz"
+            email.isBlank() -> context.getString(R.string.email_empty)
+            !Patterns.EMAIL_ADDRESS.matcher(email).matches() -> context.getString(R.string.email_invalid)
             else -> null
         }
     }
 
     fun validatePassword(password: String): String? {
+        val context = FirebaseAuth.getInstance().app.applicationContext
         return when {
-            password.length < 6 -> "Şifre en az 6 karakter olmalıdır"
-            !password.any { it.isDigit() } -> "Şifre en az bir rakam içermelidir"
-            !password.any { it.isLetter() } -> "Şifre en az bir harf içermelidir"
+            password.length < 6 -> context.getString(R.string.password_min_length)
+            !password.any { it.isDigit() } -> context.getString(R.string.password_digit)
+            !password.any { it.isLetter() } -> context.getString(R.string.password_letter)
             else -> null
         }
     }
 
     fun validateName(name: String): String? {
+        val context = FirebaseAuth.getInstance().app.applicationContext
         return when {
-            name.isBlank() -> "Ad boş olamaz"
-            name.length < 2 -> "Ad en az 2 karakter olmalıdır"
+            name.isBlank() -> context.getString(R.string.name_empty)
+            name.length < 2 -> context.getString(R.string.name_min_length)
             else -> null
         }
     }
 
     fun validateSurname(surname: String): String? {
+        val context = FirebaseAuth.getInstance().app.applicationContext
         return when {
-            surname.isBlank() -> "Soyad boş olamaz"
-            surname.length < 2 -> "Soyad en az 2 karakter olmalıdır"
+            surname.isBlank() -> context.getString(R.string.surname_empty)
+            surname.length < 2 -> context.getString(R.string.surname_min_length)
             else -> null
         }
     }
@@ -112,15 +116,17 @@ class AuthViewModel : ViewModel() {
                         .set(userData)
                         .await()
                     
-                    _uiState.value = AuthUiState.Success("Kayıt başarılı")
+                    val context = FirebaseAuth.getInstance().app.applicationContext
+                    _uiState.value = AuthUiState.Success(context.getString(R.string.registration_successful))
                 }
             } catch (e: Exception) {
+                val context = FirebaseAuth.getInstance().app.applicationContext
                 val errorMessage = when (e.message) {
                     "The email address is already in use by another account." -> 
-                        "Bu e-posta adresi zaten kullanımda"
+                        context.getString(R.string.email_already_in_use)
                     "A network error (such as timeout, interrupted connection or unreachable host) has occurred." -> 
-                        "İnternet bağlantınızı kontrol edin"
-                    else -> "Kayıt sırasında bir hata oluştu: ${e.message}"
+                        context.getString(R.string.network_error)
+                    else -> context.getString(R.string.registration_error, e.message)
                 }
                 _uiState.value = AuthUiState.Error(errorMessage)
             }
@@ -132,16 +138,18 @@ class AuthViewModel : ViewModel() {
             try {
                 _uiState.value = AuthUiState.Loading
                 auth.signInWithEmailAndPassword(email, password).await()
-                _uiState.value = AuthUiState.Success("Giriş başarılı")
+                val context = FirebaseAuth.getInstance().app.applicationContext
+                _uiState.value = AuthUiState.Success(context.getString(R.string.login_successful))
             } catch (e: Exception) {
+                val context = FirebaseAuth.getInstance().app.applicationContext
                 val errorMessage = when (e.message) {
                     "The password is invalid or the user does not have a password." -> 
-                        "Hatalı şifre"
+                        context.getString(R.string.invalid_password)
                     "There is no user record corresponding to this identifier." -> 
-                        "Bu e-posta adresi ile kayıtlı kullanıcı bulunamadı"
+                        context.getString(R.string.user_not_found)
                     "A network error (such as timeout, interrupted connection or unreachable host) has occurred." -> 
-                        "İnternet bağlantınızı kontrol edin"
-                    else -> "Giriş sırasında bir hata oluştu: ${e.message}"
+                        context.getString(R.string.network_error)
+                    else -> context.getString(R.string.login_error, e.message)
                 }
                 _uiState.value = AuthUiState.Error(errorMessage)
             }
@@ -181,12 +189,14 @@ class AuthViewModel : ViewModel() {
                             .await()
                     }
                     
-                    _uiState.value = AuthUiState.Success("Giriş başarılı")
+                    val context = FirebaseAuth.getInstance().app.applicationContext
+                    _uiState.value = AuthUiState.Success(context.getString(R.string.login_successful))
                 }
             } catch (e: Exception) {
+                val context = FirebaseAuth.getInstance().app.applicationContext
                 val errorMessage = when (e) {
-                    is ApiException -> "Google ile giriş yapılamadı: ${e.statusCode}"
-                    else -> "Giriş sırasında bir hata oluştu: ${e.message}"
+                    is ApiException -> context.getString(R.string.google_signin_error, e.statusCode)
+                    else -> context.getString(R.string.login_error, e.message)
                 }
                 _uiState.value = AuthUiState.Error(errorMessage)
             }
@@ -225,18 +235,20 @@ fun AuthScreen(
     
     // Google Sign-In hatası için state
     var signInError by remember { mutableStateOf<String?>(null) }
+    var isGoogleSignInLoading by remember { mutableStateOf(false) }
     
     // Google Sign-In için ActivityResult launcher
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        isGoogleSignInLoading = false
         val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
         try {
             val account = task.getResult(ApiException::class.java)
             account?.let { viewModel.signInWithGoogle(it) }
         } catch (e: ApiException) {
             // Google Sign-In hatası
-            signInError = "Google ile giriş yapılamadı: ${e.statusCode}"
+            signInError = context.getString(R.string.google_signin_error, e.statusCode)
         }
     }
     
@@ -255,7 +267,7 @@ fun AuthScreen(
     LaunchedEffect(uiState) {
         when (uiState) {
             is AuthUiState.Success -> {
-                snackbarHostState.showSnackbar((uiState as AuthUiState.Success).message)
+                // Toast mesajını göster ve hemen ana sayfaya git
                 navController.navigate("home") {
                     popUpTo("auth") { inclusive = true }
                 }
@@ -289,12 +301,12 @@ fun AuthScreen(
             )
 
             Text(
-                text = "NeoCard'a Hoş Geldiniz",
+                text = context.getString(R.string.welcome_to_neocard),
                 style = MaterialTheme.typography.headlineMedium
             )
 
             Text(
-                text = "Kartvizitlerinizi yönetmek için giriş yapın",
+                text = context.getString(R.string.login_to_manage_cards),
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
@@ -304,19 +316,20 @@ fun AuthScreen(
 
             Button(
                 onClick = {
+                    isGoogleSignInLoading = true
                     val signInIntent = googleSignInClient.signInIntent
                     launcher.launch(signInIntent)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                enabled = uiState !is AuthUiState.Loading
+                enabled = uiState !is AuthUiState.Loading && !isGoogleSignInLoading
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                if (uiState is AuthUiState.Loading) {
+                if (uiState is AuthUiState.Loading || isGoogleSignInLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
                         color = MaterialTheme.colorScheme.onPrimary
@@ -327,7 +340,7 @@ fun AuthScreen(
                             contentDescription = "Google Logo",
                             modifier = Modifier.size(24.dp)
                         )
-                        Text("Google ile Giriş Yap")
+                        Text(context.getString(R.string.sign_in_with_google))
                 }
             }
             }
@@ -335,7 +348,7 @@ fun AuthScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
                 Text(
-                text = "Google hesabınızla giriş yaparak, Gizlilik Politikası ve Kullanım Koşullarını kabul etmiş olursunuz.",
+                text = context.getString(R.string.privacy_policy_agreement),
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)

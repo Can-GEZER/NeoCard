@@ -88,6 +88,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.tasks.await
 import androidx.compose.ui.draw.scale
+import android.content.Context
 
 @Composable
 fun SocialMediaIcon(iconRes: Int, contentDescription: String, tint: Color) {
@@ -133,7 +134,7 @@ fun CreateCardScreen(navController: NavController) {
     var github by remember { mutableStateOf("") }
     var backgroundColor by remember { mutableStateOf(Color.White) }
     var backgroundType by remember { mutableStateOf(BackgroundType.SOLID) }
-    var selectedGradient by remember { mutableStateOf(predefinedGradients[0]) }
+    var selectedGradient by remember { mutableStateOf(getPredefinedGradients(context).first()) }
     var selectedText by remember { mutableStateOf<TextType?>(null) }
     var textStyles by remember {
         mutableStateOf(
@@ -184,7 +185,7 @@ fun CreateCardScreen(navController: NavController) {
         github = ""
         backgroundColor = Color.White
         backgroundType = BackgroundType.SOLID
-        selectedGradient = predefinedGradients[0]
+        selectedGradient = getPredefinedGradients(context).first()
         selectedText = null
         textStyles = mapOf(
             TextType.NAME_SURNAME to TextStyle(fontSize = 18f),
@@ -200,7 +201,7 @@ fun CreateCardScreen(navController: NavController) {
 
     fun saveCard() {
         if (currentUser == null) {
-            Toast.makeText(context, "Lütfen giriş yapın", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.please_login), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -218,7 +219,7 @@ fun CreateCardScreen(navController: NavController) {
                     val cardCount = userDocRef.collection("cards").get().await().size()
                     if (cardCount >= 1) {
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "Premium olmadan sadece 1 kart oluşturabilirsiniz.", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, context.getString(R.string.premium_card_limit), Toast.LENGTH_LONG).show()
                             isLoading = false
                         }
                         return@launch
@@ -322,7 +323,7 @@ fun CreateCardScreen(navController: NavController) {
         
                         // UI'ı güncelle
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "Kart başarıyla kaydedildi", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.card_saved), Toast.LENGTH_SHORT).show()
                             clearForm()
                             isLoading = false
                             navController.popBackStack() // Önceki sayfaya dön
@@ -330,7 +331,7 @@ fun CreateCardScreen(navController: NavController) {
                     } catch (e: Exception) {
                         withContext(Dispatchers.Main) {
                             isLoading = false
-                            Toast.makeText(context, "Resim yüklenirken hata oluştu: ${e.localizedMessage ?: "Bilinmeyen hata"}", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, context.getString(R.string.image_upload_error, e.localizedMessage ?: context.getString(R.string.unknown_error)), Toast.LENGTH_LONG).show()
                         }
                     }
                 } else {
@@ -385,7 +386,7 @@ fun CreateCardScreen(navController: NavController) {
     
                     // UI'ı güncelle
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "Kart başarıyla kaydedildi", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.card_saved), Toast.LENGTH_SHORT).show()
                         clearForm()
                         isLoading = false
                         navController.popBackStack() // Önceki sayfaya dön
@@ -393,7 +394,7 @@ fun CreateCardScreen(navController: NavController) {
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Hata oluştu: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, context.getString(R.string.error_occurred, e.localizedMessage), Toast.LENGTH_LONG).show()
                     isLoading = false
                 }
             }
@@ -440,7 +441,7 @@ fun CreateCardScreen(navController: NavController) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Yeni Kartvizit Oluştur",
+                    text = context.getString(R.string.create_card),
                     style = MaterialTheme.typography.headlineSmall
                 )
 
@@ -448,7 +449,7 @@ fun CreateCardScreen(navController: NavController) {
                     onClick = { saveCard() },
                     modifier = Modifier.wrapContentWidth()
                 ) {
-                    Text("Kaydet")
+                    Text(context.getString(R.string.save))
                 }
             }
 
@@ -647,31 +648,31 @@ fun CreateCardScreen(navController: NavController) {
                     onDismissRequest = { showPremiumDialog = false },
                     title = {
                         Text(
-                            text = "Premium Avantajları",
+                                            text = context.getString(R.string.premium_benefits),
                             style = MaterialTheme.typography.titleMedium
                         )
                     },
                     text = {
                         Column {
                             Text(
-                                text = "Premium üyelik ile aşağıdaki avantajlara erişebilirsiniz:",
+                                text = context.getString(R.string.premium_advantages_description),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "• Sınırsız kart oluşturma",
+                                text = context.getString(R.string.premium_unlimited_cards),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Text(
-                                text = "• Gradyan arkaplanlar",
+                                text = context.getString(R.string.premium_gradient_backgrounds),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Text(
-                                text = "• Yazı stillerini özelleştirme",
+                                text = context.getString(R.string.premium_custom_text_styles),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Text(
-                                text = "• Reklamsız deneyim",
+                                text = context.getString(R.string.premium_ad_free),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -684,7 +685,7 @@ fun CreateCardScreen(navController: NavController) {
                                 contentColor = MaterialTheme.colorScheme.onPrimary
                             )
                         ) {
-                            Text("Tamam")
+                            Text(context.getString(R.string.ok))
                         }
                     },
                     dismissButton = {
@@ -693,7 +694,7 @@ fun CreateCardScreen(navController: NavController) {
                                 popUpTo("createcard") { inclusive = true }
                             } }
                         ) {
-                            Text("Premium Ol")
+                            Text(context.getString(R.string.get_premium))
                         }
                     }
                 )
@@ -709,7 +710,7 @@ fun CreateCardScreen(navController: NavController) {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Profil Fotoğrafı
-                FormCard(title = "Profil Fotoğrafı / Logo") {
+                FormCardContent(title = context.getString(R.string.profile_picture_logo)) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -731,7 +732,7 @@ fun CreateCardScreen(navController: NavController) {
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Galeriden Seç")
+                                Text(context.getString(R.string.choose_from_gallery))
                             }
 
                             if (profileImageUri != null) {
@@ -751,7 +752,7 @@ fun CreateCardScreen(navController: NavController) {
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Fotoğrafı Kaldır")
+                                    Text(context.getString(R.string.remove_profile_picture))
                                 }
                             }
                         }
@@ -759,28 +760,28 @@ fun CreateCardScreen(navController: NavController) {
                 }
 
                 // Kişisel Bilgiler Kartı
-                FormCard(title = "Kişisel Bilgiler") {
+                FormCardContent(title = context.getString(R.string.personal_info)) {
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
-                        label = { Text("Ad") },
+                        label = { Text(context.getString(R.string.name)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = surname,
                         onValueChange = { surname = it },
-                        label = { Text("Soyad") },
+                        label = { Text(context.getString(R.string.surname)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
 
                 // İletişim Bilgileri Kartı
-                FormCard(title = "İletişim Bilgileri") {
+                FormCardContent(title = context.getString(R.string.contact_info)) {
                     OutlinedTextField(
                         value = phone,
                         onValueChange = { phone = it },
-                        label = { Text("Telefon") },
+                        label = { Text(context.getString(R.string.phone)) },
                         leadingIcon = { Icon(Icons.Default.Phone, null) },
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -788,18 +789,18 @@ fun CreateCardScreen(navController: NavController) {
                     OutlinedTextField(
                         value = email,
                         onValueChange = { email = it },
-                        label = { Text("E-posta") },
+                        label = { Text(context.getString(R.string.email)) },
                         leadingIcon = { Icon(Icons.Default.Email, null) },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
 
                 // İş Bilgileri Kartı
-                FormCard(title = "İş Bilgileri") {
+                FormCardContent(title = context.getString(R.string.business_info)) {
                     OutlinedTextField(
                         value = company,
                         onValueChange = { company = it },
-                        label = { Text("Şirket Adı") },
+                        label = { Text(context.getString(R.string.company)) },
                         leadingIcon = {
                             Icon(
                                 painter = painterResource(id = R.drawable.company),
@@ -814,7 +815,7 @@ fun CreateCardScreen(navController: NavController) {
                     OutlinedTextField(
                         value = title,
                         onValueChange = { title = it },
-                        label = { Text("Ünvan") },
+                        label = { Text(context.getString(R.string.title)) },
                         leadingIcon = {
                             Icon(
                                 painter = painterResource(id = R.drawable.statue),
@@ -829,7 +830,7 @@ fun CreateCardScreen(navController: NavController) {
                     OutlinedTextField(
                         value = website,
                         onValueChange = { website = it },
-                        label = { Text("Web Sitesi") },
+                        label = { Text(context.getString(R.string.website)) },
                         leadingIcon = {
                             Icon(
                                 painter = painterResource(id = R.drawable.web),
@@ -843,45 +844,45 @@ fun CreateCardScreen(navController: NavController) {
                 }
 
                 // Sosyal Medya Kartı
-                FormCard(title = "Sosyal Medya") {
+                FormCardContent(title = context.getString(R.string.social_media)) {
                     OutlinedTextField(
                         value = linkedin,
                         onValueChange = { linkedin = it },
-                        label = { Text("LinkedIn") },
+                        label = { Text(context.getString(R.string.linkedin)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = github,
                         onValueChange = { github = it },
-                        label = { Text("GitHub") },
+                        label = { Text(context.getString(R.string.github)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = twitter,
                         onValueChange = { twitter = it },
-                        label = { Text("Twitter") },
+                        label = { Text(context.getString(R.string.twitter)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = instagram,
                         onValueChange = { instagram = it },
-                        label = { Text("Instagram") },
+                        label = { Text(context.getString(R.string.instagram)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = facebook,
                         onValueChange = { facebook = it },
-                        label = { Text("Facebook") },
+                        label = { Text(context.getString(R.string.facebook)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
 
                 // Tasarım Kartı
-                FormCard(title = "Tasarım") {
+                FormCardContent(title = context.getString(R.string.design)) {
                     // Arkaplan Tipi Seçimi
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -890,13 +891,13 @@ fun CreateCardScreen(navController: NavController) {
                         FilterChip(
                             selected = backgroundType == BackgroundType.SOLID,
                             onClick = { backgroundType = BackgroundType.SOLID }, // SOLID her zaman seçilebilir
-                            label = { Text("Düz Renk") },
+                            label = { Text(context.getString(R.string.solid_color)) },
                             enabled = true // SOLID her zaman aktif
                         )
                         FilterChip(
                             selected = backgroundType == BackgroundType.GRADIENT,
                             onClick = { if (isPremium) backgroundType = BackgroundType.GRADIENT }, // GRADYAN sadece premium için
-                            label = { Text("Gradyan") },
+                            label = { Text(context.getString(R.string.gradient)) },
                             enabled = isPremium // GRADYAN sadece premium kullanıcılar için aktif
                         )
                     }
@@ -905,24 +906,24 @@ fun CreateCardScreen(navController: NavController) {
 
                     when (backgroundType) {
                         BackgroundType.SOLID -> {
-                            Text("Arka Plan Rengi")
+                            Text(context.getString(R.string.background_color))
                             LazyRow(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 contentPadding = PaddingValues(vertical = 8.dp)
                             ) {
                                 val colors = listOf(
-                                    Color.White to "Beyaz",
-                                    Color.Black to "Siyah",
-                                    Color(0xFFFFD700) to "Altın",
-                                    Color(0xFF40E0D0) to "Turkuaz",
-                                    Color(0xFF4CAF50) to "Yeşil",
-                                    Color(0xFFFF9800) to "Turuncu",
-                                    Color(0xFF2196F3) to "Mavi",
-                                    Color(0xFFE91E63) to "Pembe",
-                                    Color(0xFF9C27B0) to "Mor",
-                                    Color(0xFF795548) to "Kahverengi",
-                                    Color(0xFF607D8B) to "Gri",
-                                    Color(0xFFF44336) to "Kırmızı"
+                                    Color.White to context.getString(R.string.color_white),
+                                    Color.Black to context.getString(R.string.color_black),
+                                    Color(0xFFFFD700) to context.getString(R.string.color_gold),
+                                    Color(0xFF40E0D0) to context.getString(R.string.color_turquoise),
+                                    Color(0xFF4CAF50) to context.getString(R.string.color_green),
+                                    Color(0xFFFF9800) to context.getString(R.string.color_orange),
+                                    Color(0xFF2196F3) to context.getString(R.string.color_blue),
+                                    Color(0xFFE91E63) to context.getString(R.string.color_pink),
+                                    Color(0xFF9C27B0) to context.getString(R.string.color_purple),
+                                    Color(0xFF795548) to context.getString(R.string.color_brown),
+                                    Color(0xFF607D8B) to context.getString(R.string.color_gray),
+                                    Color(0xFFF44336) to context.getString(R.string.color_red)
                                 )
                                 items(colors) { (color, name) ->
                                     ColorButton(
@@ -935,17 +936,17 @@ fun CreateCardScreen(navController: NavController) {
                             }
                         }
                         BackgroundType.GRADIENT -> {
-                            Text("Gradyan Seç")
+                            Text(context.getString(R.string.select_gradient))
                             LazyRow(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 contentPadding = PaddingValues(vertical = 8.dp)
                             ) {
-                                items(predefinedGradients) { gradient ->
+                                items(getPredefinedGradients(context)) { (name, brush) ->
                                     GradientButton(
-                                        name = gradient.first,
-                                        brush = gradient.second,
-                                        isSelected = selectedGradient == gradient,
-                                        onSelect = { if (isPremium) selectedGradient = gradient }
+                                        name = name,
+                                        brush = brush,
+                                        isSelected = selectedGradient.first == name,
+                                        onSelect = { if (isPremium) selectedGradient = Pair(name, brush) }
                                     )
                                 }
                             }
@@ -955,9 +956,9 @@ fun CreateCardScreen(navController: NavController) {
 
                 // Yazı Stilleri Kartı
                 if (isPremium) {
-                    FormCard(title = "Yazı Stilleri") {
+                    FormCardContent(title = context.getString(R.string.text_styles)) {
                         if (selectedText != null) {
-                            val style = textStyles[selectedText] ?: return@FormCard
+                            val style = textStyles[selectedText] ?: return@FormCardContent
 
                             // Stil seçenekleri
                             Row(
@@ -996,7 +997,7 @@ fun CreateCardScreen(navController: NavController) {
                             Spacer(modifier = Modifier.height(16.dp))
 
                             // Font boyutu Slider
-                            Text("Yazı Boyutu: ${style.fontSize.toInt()}sp")
+                                Text(context.getString(R.string.font_size, style.fontSize.toInt()))
                             Slider(
                                 value = style.fontSize,
                                 onValueChange = { newSize ->
@@ -1012,24 +1013,24 @@ fun CreateCardScreen(navController: NavController) {
                             Spacer(modifier = Modifier.height(16.dp))
 
                             // Renk seçici
-                            Text("Yazı Rengi")
+                            Text(context.getString(R.string.text_color))
                             LazyRow(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 contentPadding = PaddingValues(vertical = 8.dp)
                             ) {
                                 val colors = listOf(
-                                    Color.White to "Beyaz",
-                                    Color.Black to "Siyah",
-                                    Color(0xFFFFD700) to "Altın",
-                                    Color(0xFF40E0D0) to "Turkuaz",
-                                    Color(0xFF4CAF50) to "Yeşil",
-                                    Color(0xFFFF9800) to "Turuncu",
-                                    Color(0xFF2196F3) to "Mavi",
-                                    Color(0xFFE91E63) to "Pembe",
-                                    Color(0xFF9C27B0) to "Mor",
-                                    Color(0xFF795548) to "Kahverengi",
-                                    Color(0xFF607D8B) to "Gri",
-                                    Color(0xFFF44336) to "Kırmızı"
+                                    Color.White to context.getString(R.string.color_white),
+                                    Color.Black to context.getString(R.string.color_black),
+                                    Color(0xFFFFD700) to context.getString(R.string.color_gold),
+                                    Color(0xFF40E0D0) to context.getString(R.string.color_turquoise),
+                                    Color(0xFF4CAF50) to context.getString(R.string.color_green),
+                                    Color(0xFFFF9800) to context.getString(R.string.color_orange),
+                                    Color(0xFF2196F3) to context.getString(R.string.color_blue),
+                                    Color(0xFFE91E63) to context.getString(R.string.color_pink),
+                                    Color(0xFF9C27B0) to context.getString(R.string.color_purple),
+                                    Color(0xFF795548) to context.getString(R.string.color_brown),
+                                    Color(0xFF607D8B) to context.getString(R.string.color_gray),
+                                    Color(0xFFF44336) to context.getString(R.string.color_red)
                                 )
                                 items(colors) { (color, name) ->
                                     ColorButton(
@@ -1046,7 +1047,7 @@ fun CreateCardScreen(navController: NavController) {
                             }
                         } else {
                             Text(
-                                text = "Henüz bir yazı seçilmedi",
+                                text = context.getString(R.string.no_text_selected),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
@@ -1066,7 +1067,7 @@ fun CreateCardScreen(navController: NavController) {
                 
                 // Gizlilik Ayarları
                 FormCardWithSwitch(
-                    title = "Görünürlük",
+                    title = context.getString(R.string.visibility),
                     isChecked = isPublic,
                     onCheckedChange = { isPublic = it }
                 )
@@ -1097,7 +1098,7 @@ fun CreateCardScreen(navController: NavController) {
                     ) {
                         CircularProgressIndicator()
                         Text(
-                            text = "Kart Kaydediliyor...",
+                                text = context.getString(R.string.saving_card),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
@@ -1120,6 +1121,7 @@ fun CreateCardScreen(navController: NavController) {
 
 @Composable
 fun PremiumInfoCard(onClick: () -> Unit) {
+    val context = LocalContext.current
     Card(
         modifier = Modifier
             .clickable(onClick = onClick),
@@ -1136,13 +1138,13 @@ fun PremiumInfoCard(onClick: () -> Unit) {
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.info), // Bilgi ikonu
-                contentDescription = "Premium Avantajları",
+                contentDescription = context.getString(R.string.premium_benefits),
                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Premium ol",
+                text = context.getString(R.string.get_premium),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
@@ -1151,7 +1153,7 @@ fun PremiumInfoCard(onClick: () -> Unit) {
 }
 
 @Composable
-private fun FormCard(
+private fun FormCardContent(
     title: String,
     content: @Composable () -> Unit
 ) {
@@ -1180,6 +1182,7 @@ private fun FormCardWithSwitch(
     onCheckedChange: (Boolean) -> Unit,
     content: @Composable () -> Unit = {}
 ) {
+    val context = LocalContext.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -1213,7 +1216,7 @@ private fun FormCardWithSwitch(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (isChecked) "Açık" else "Kapalı",
+                        text = if (isChecked) context.getString(R.string.on) else context.getString(R.string.off),
                         style = MaterialTheme.typography.bodySmall,
                         color = if (isChecked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(end = 4.dp)
@@ -1237,9 +1240,9 @@ private fun FormCardWithSwitch(
             // Seçime bağlı açıklama metni
             Text(
                 text = if (isChecked) 
-                    "Kartvizitiniz keşfet bölümünde herkese açık olarak görüntülenecek" 
+                    context.getString(R.string.card_visible_to_all) 
                 else 
-                    "Kartvizitiniz sadece doğrudan paylaştığınız kişilere görünecek",
+                    context.getString(R.string.card_visible_to_shared),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 28.dp, top = 4.dp)
@@ -1318,25 +1321,25 @@ fun GradientButton(
 }
 
 // Önceden tanımlı gradyanlar
-val predefinedGradients = listOf(
+fun getPredefinedGradients(context: Context) = listOf(
     Pair(
-        "Gün Batımı",
+        context.getString(R.string.gradient_sunset),
         Brush.horizontalGradient(listOf(Color(0xFFFE6B8B), Color(0xFFFF8E53)))
     ),
     Pair(
-        "Okyanus",
+        context.getString(R.string.gradient_ocean),
         Brush.horizontalGradient(listOf(Color(0xFF2196F3), Color(0xFF00BCD4)))
     ),
     Pair(
-        "Orman",
+        context.getString(R.string.gradient_forest),
         Brush.horizontalGradient(listOf(Color(0xFF4CAF50), Color(0xFF8BC34A)))
     ),
     Pair(
-        "Gece",
+        context.getString(R.string.gradient_night),
         Brush.verticalGradient(listOf(Color(0xFF2C3E50), Color(0xFF3498DB)))
     ),
     Pair(
-        "Mor Sis",
+        context.getString(R.string.gradient_purple_mist),
         Brush.verticalGradient(listOf(Color(0xFF9C27B0), Color(0xFFE91E63)))
     )
 )
@@ -1346,12 +1349,13 @@ private fun CardTypeSelector(
     selectedType: CardType?,
     onTypeSelected: (CardType) -> Unit
 ) {
-    FormCard(title = "Kart Tipi") {
+    val context = LocalContext.current
+                FormCardContent(title = context.getString(R.string.card_type)) {
         Column(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Kartvizitinizin kullanım amacını seçin",
+                text = context.getString(R.string.select_card_purpose),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )

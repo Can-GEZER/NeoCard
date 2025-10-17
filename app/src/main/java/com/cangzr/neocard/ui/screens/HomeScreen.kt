@@ -112,7 +112,7 @@ import java.io.FileOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.core.content.FileProvider
-import com.cangzr.neocard.ui.screens.predefinedGradients // Gradyanları CreateCardScreen.kt'den import et
+import com.cangzr.neocard.ui.screens.getPredefinedGradients // Gradyanları CreateCardScreen.kt'den import et
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 
@@ -128,6 +128,7 @@ fun Modifier.onAppear(callback: () -> Unit): Modifier {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavHostController) {
+    val context = LocalContext.current
     val auth = FirebaseAuth.getInstance()
     val firestore = FirebaseFirestore.getInstance()
     val currentUser = auth.currentUser
@@ -135,10 +136,11 @@ fun HomeScreen(navController: NavHostController) {
     var cards by remember { mutableStateOf<List<UserCard>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var showCardTypeDropdown by remember { mutableStateOf(false) }
-    var selectedCardType by remember { mutableStateOf("Tümü") }
+    val allFilterText = context.getString(R.string.all)
+    var selectedCardType by remember { mutableStateOf(allFilterText) }
     
     // Kart tipleri listesi - "Tümü" ve CardType enum değerleri
-    val cardTypes = listOf("Tümü") + CardType.entries.map { it.getTitle() }
+    val cardTypes = listOf(allFilterText) + CardType.entries.map { it.getTitle() }
     
     // Pagination için değişkenler
     var lastVisibleCard by remember { mutableStateOf<String?>(null) }
@@ -172,7 +174,48 @@ fun HomeScreen(navController: NavHostController) {
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        if (isLoading) {
+        val context = LocalContext.current
+        // Kullanıcı giriş yapmamışsa giriş yapma uyarısı göster
+        if (currentUser == null) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.cards),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    
+                    Text(
+                        text = context.getString(R.string.login_to_create_cards),
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
+                    )
+                    
+                    Button(
+                        onClick = { navController.navigate(Screen.Auth.route) },
+                        modifier = Modifier.fillMaxWidth(0.8f)
+                    ) {
+                        Text(context.getString(R.string.login))
+                    }
+                }
+            }
+        } else if (isLoading) {
             // Yükleme göstergesi
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -181,113 +224,113 @@ fun HomeScreen(navController: NavHostController) {
                 CircularProgressIndicator()
             }
         } else {
-            Column(
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Kartvizit Galerisi Başlık
+            Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .fillMaxWidth()
+                    .padding(top = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Kartvizit Galerisi Başlık
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 2.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .clickable { showCardTypeDropdown = true }
-                                .padding(vertical = 4.dp)
-                ) {
-                    Text(
-                        text = if (selectedCardType == "Tümü") "Kartvizitlerim" else selectedCardType,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(
-                                imageVector = Icons.Default.ArrowDropDown,
-                                contentDescription = "Kart tipini seç",
-                                tint = MaterialTheme.colorScheme.onSurface
-                            )
-                        }
-                        
-                        // Dropdown menü
-                        DropdownMenu(
-                            expanded = showCardTypeDropdown,
-                            onDismissRequest = { showCardTypeDropdown = false },
+                Box {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clickable { showCardTypeDropdown = true }
+                            .padding(vertical = 4.dp)
+                    ) {
+                        Text(
+                        text = if (selectedCardType == context.getString(R.string.card_type_all)) context.getString(R.string.my_cards) else selectedCardType,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = "Kart tipini seç",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    
+                    // Dropdown menü
+                    DropdownMenu(
+                        expanded = showCardTypeDropdown,
+                        onDismissRequest = { showCardTypeDropdown = false },
                                         modifier = Modifier
                                 .background(MaterialTheme.colorScheme.surface)
-                        ) {
+                    ) {
                             cardTypes.forEach { type ->
-                                DropdownMenuItem(
-                                    text = { 
-                                        Row(
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            modifier = Modifier.fillMaxWidth()
-                                        ) {
-                    Text(
-                                                text = type,
+                            DropdownMenuItem(
+                                text = { 
+                                    Row(
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = type,
                                                 color = if (selectedCardType == type)
-                                                    MaterialTheme.colorScheme.primary
-                                                else
-                                                    MaterialTheme.colorScheme.onSurface
-                                            )
+                                                MaterialTheme.colorScheme.primary
+                                            else
+                                                MaterialTheme.colorScheme.onSurface
+                                        )
                                             if (selectedCardType == type) {
-                                                Icon(
-                                                    painter = painterResource(id = R.drawable.filter),
-                                                    contentDescription = null,
-                                                    tint = MaterialTheme.colorScheme.primary,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                            }
+                                            Icon(
+                                                painter = painterResource(id = R.drawable.filter),
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(20.dp)
+                                            )
                                         }
-                                    },
-                                    onClick = {
+                                    }
+                                },
+                                onClick = {
                                         selectedCardType = type
-                                        showCardTypeDropdown = false
-                                    }
-                                )
-                                    }
+                                    showCardTypeDropdown = false
                                 }
-                            }
+                            )
+                        }
+                    }
+                }
                     
 
-                }
+            }
 
-                // Kartvizit Galerisi
-                UserCardGallery(
+            // Kartvizit Galerisi
+            UserCardGallery(
                     navController = navController,
-                    filterType = if (selectedCardType == "Tümü") "Tümü"
+                    filterType = if (selectedCardType == allFilterText) allFilterText
                                 else CardType.entries.first { it.getTitle() == selectedCardType }.name
-                )
+            )
 
-                // Başlık: Kart Keşfet
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 24.dp),
-                    horizontalArrangement = Arrangement.Start,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.explore),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Diğer Kartvizitleri Keşfet",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                
+            // Başlık: Kart Keşfet
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 24.dp),
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.explore),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = context.getString(R.string.explore_other_cards),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            
                 // Kart Keşfet Bölümü (kompakt versiyon)
                 ExploreCardsSection(navController = navController)
             }
@@ -298,6 +341,8 @@ fun HomeScreen(navController: NavHostController) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserCardGallery(navController: NavHostController, filterType: String) {
+    val context = LocalContext.current
+    val allFilterText = context.getString(R.string.all)
     val auth = FirebaseAuth.getInstance()
     val firestore = FirebaseFirestore.getInstance()
     val currentUser = auth.currentUser
@@ -328,7 +373,7 @@ fun UserCardGallery(navController: NavHostController, filterType: String) {
                 onSuccess = { newCards, lastId, hasMore ->
                     cards = newCards
                     // Filtreleme işlemi
-                    filteredCards = if (filterType == "Tümü") {
+                    filteredCards = if (filterType == allFilterText) {
                         newCards
                     } else {
                         newCards.filter { it.cardType == filterType }
@@ -349,7 +394,7 @@ fun UserCardGallery(navController: NavHostController, filterType: String) {
 
     // Filtreleme değiştiğinde yeniden filtrele
     LaunchedEffect(filterType, cards) {
-        filteredCards = if (filterType == "Tümü") {
+        filteredCards = if (filterType == allFilterText) {
             cards
         } else {
             cards.filter { it.cardType == filterType }
@@ -370,7 +415,7 @@ fun UserCardGallery(navController: NavHostController, filterType: String) {
                 val updatedCards = cards + newCards
                 cards = updatedCards
                 // Filtreleme işlemi
-                filteredCards = if (filterType == "Tümü") {
+                filteredCards = if (filterType == allFilterText) {
                     updatedCards
                 } else {
                     updatedCards.filter { it.cardType == filterType }
@@ -385,79 +430,75 @@ fun UserCardGallery(navController: NavHostController, filterType: String) {
         )
     }
 
-    // Kullanıcı giriş yapmamışsa giriş yapma uyarısı göster
-    if (currentUser == null) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            )
-        ) {
-            Column(
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        val context = LocalContext.current
+        if (currentUser == null) {
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(vertical = 8.dp),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.cards),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(48.dp)
-                )
-                
-                Text(
-                    text = "Kartvizitlerinizi oluşturup yönetmek için giriş yapın",
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center
-                )
-                
-                Button(
-                    onClick = { navController.navigate(Screen.Auth.route) },
-                    modifier = Modifier.fillMaxWidth(0.8f)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Text("Giriş Yap")
+                    Icon(
+                        painter = painterResource(id = R.drawable.cards),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    
+                    Text(
+                        text = context.getString(R.string.login_to_create_cards),
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center
+                    )
+                    
+                    Button(
+                        onClick = { navController.navigate(Screen.Auth.route) },
+                        modifier = Modifier.fillMaxWidth(0.8f)
+                    ) {
+                        Text(context.getString(R.string.login))
+                    }
                 }
             }
-        }
-        return
-    }
-
-    if (isLoading) {
-        Box(
-            modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
-        return
-    }
-
-    if (filteredCards.isEmpty()) {
-        // Kullanıcının hiç kartı yoksa veya filtrelenmiş sonuç boşsa uyarı göster
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = if (cards.isEmpty()) 
-                    "Henüz kartvizit oluşturulmadı.\nYeni bir kartvizit eklemek için + simgesine tıklayın."
-                else 
-                    "Seçili tipte kartvizit bulunamadı.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                textAlign = TextAlign.Center
-            )
-        }
-    } else {
-        Box(modifier = Modifier.fillMaxWidth()) {
+        } else if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else if (filteredCards.isEmpty()) {
+            // Kullanıcının hiç kartı yoksa veya filtrelenmiş sonuç boşsa uyarı göster
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (cards.isEmpty()) 
+                        context.getString(R.string.no_cards_created)
+                    else 
+                        context.getString(R.string.no_cards_of_type),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center
+                )
+            }
+        } else {
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(end = 8.dp)
@@ -521,16 +562,15 @@ fun UserCardGallery(navController: NavHostController, filterType: String) {
     }
 
     var qrCodeBitmap by remember { mutableStateOf<Bitmap?>(null) }
-    val context = LocalContext.current
     var selectedCardForShare by remember { mutableStateOf<UserCard?>(null) }
     var selectedTabIndex by remember { mutableStateOf(0) }
     var isExporting by remember { mutableStateOf(false) }
 
     fun copyToClipboard(context: Context, cardId: String) {
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clip = ClipData.newPlainText("Kartvizit Linki", "https://neocardapp.com/card/$cardId")
+        val clip = ClipData.newPlainText(context.getString(R.string.share_card), "https://neocardapp.com/card/$cardId")
         clipboard.setPrimaryClip(clip)
-        Toast.makeText(context, "Link kopyalandı", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.link_copied), Toast.LENGTH_SHORT).show()
     }
     
     fun shareLink(context: Context, cardId: String) {
@@ -579,28 +619,28 @@ fun UserCardGallery(navController: NavHostController, filterType: String) {
             
             if (card.backgroundType == "GRADIENT") {
                 // Gradyan arkaplanı için predefinedGradients'ten doğru gradyanı bul
-                val gradient = predefinedGradients.firstOrNull { it.first == card.selectedGradient }
+                val gradient = getPredefinedGradients(context).firstOrNull { it.first == card.selectedGradient }
                 
                 if (gradient != null) {
                     // Gradyandan renkleri al
                     val colors = when {
-                        gradient.first == "Gün Batımı" -> intArrayOf(
+                        gradient.first == context.getString(R.string.gradient_sunset) -> intArrayOf(
                             Color(0xFFFE6B8B).toArgb(),
                             Color(0xFFFF8E53).toArgb()
                         )
-                        gradient.first == "Okyanus" -> intArrayOf(
+                        gradient.first == context.getString(R.string.gradient_ocean) -> intArrayOf(
                             Color(0xFF2196F3).toArgb(),
                             Color(0xFF00BCD4).toArgb()
                         )
-                        gradient.first == "Orman" -> intArrayOf(
+                        gradient.first == context.getString(R.string.gradient_forest) -> intArrayOf(
                             Color(0xFF4CAF50).toArgb(),
                             Color(0xFF8BC34A).toArgb()
                         )
-                        gradient.first == "Gece" -> intArrayOf(
+                        gradient.first == context.getString(R.string.gradient_night) -> intArrayOf(
                             Color(0xFF2C3E50).toArgb(),
                             Color(0xFF3498DB).toArgb()
                         )
-                        gradient.first == "Mor Sis" -> intArrayOf(
+                        gradient.first == context.getString(R.string.gradient_purple_mist) -> intArrayOf(
                             Color(0xFF9C27B0).toArgb(),
                             Color(0xFFE91E63).toArgb()
                         )
@@ -611,7 +651,7 @@ fun UserCardGallery(navController: NavHostController, filterType: String) {
                     }
                     
                     // Gradyanın yönünü belirle (yatay mı dikey mi?)
-                    val isVertical = gradient.first == "Gece" || gradient.first == "Mor Sis"
+                    val isVertical = gradient.first == context.getString(R.string.gradient_night) || gradient.first == context.getString(R.string.gradient_purple_mist)
                     
                     // Ona göre LinearGradient oluştur
                     val shader = if (isVertical) {
@@ -942,7 +982,7 @@ fun UserCardGallery(navController: NavHostController, filterType: String) {
     if (selectedCard != null) {
         AlertDialog(
             onDismissRequest = { selectedCard = null },
-            title = { Text("Kartvizit İşlemleri") },
+            title = { Text(context.getString(R.string.card_actions)) },
             confirmButton = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
@@ -957,7 +997,7 @@ fun UserCardGallery(navController: NavHostController, filterType: String) {
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(imageVector = Icons.Default.Edit, contentDescription = null)
-                            Text("Detayları Görüntüle")
+                            Text(context.getString(R.string.view_details))
                         }
                     }
                     Button(
@@ -978,7 +1018,7 @@ fun UserCardGallery(navController: NavHostController, filterType: String) {
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(imageVector = Icons.Default.Share, contentDescription = null)
-                            Text("Kartvizit Paylaş")
+                            Text(context.getString(R.string.share_card))
                         }
                     }
                 }
@@ -998,7 +1038,7 @@ fun UserCardGallery(navController: NavHostController, filterType: String) {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Paylaş", style = MaterialTheme.typography.titleMedium)
+                Text(context.getString(R.string.share), style = MaterialTheme.typography.titleMedium)
 
                 // Tab yapısı ile farklı paylaşım seçenekleri arasında geçiş
                 TabRow(
@@ -1010,7 +1050,7 @@ fun UserCardGallery(navController: NavHostController, filterType: String) {
                     Tab(
                         selected = selectedTabIndex == 0,
                         onClick = { selectedTabIndex = 0 },
-                        text = { Text("QR Kod") },
+                        text = { Text(context.getString(R.string.qr_code)) },
                         icon = { 
                             Icon(
                                 painter = painterResource(id = R.drawable.qr_code), 
@@ -1022,7 +1062,7 @@ fun UserCardGallery(navController: NavHostController, filterType: String) {
                     Tab(
                         selected = selectedTabIndex == 1,
                         onClick = { selectedTabIndex = 1 },
-                        text = { Text("Görsel") },
+                        text = { Text(context.getString(R.string.image)) },
                         icon = { 
                             Icon(
                                 painter = painterResource(id = R.drawable.image), 
@@ -1037,47 +1077,47 @@ fun UserCardGallery(navController: NavHostController, filterType: String) {
                 
                 when (selectedTabIndex) {
                     0 -> {
-                // QR Kod Gösterimi
-                qrCodeBitmap?.let { bitmap ->
-                    Image(
-                        bitmap = bitmap.asImageBitmap(),
-                        contentDescription = "QR Kod",
-                        modifier = Modifier.size(250.dp)
-                    )
-                }
+                        // QR Kod Gösterimi
+                        qrCodeBitmap?.let { bitmap ->
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = "QR Kod",
+                                modifier = Modifier.size(250.dp)
+                            )
+                        }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                // Link ve Paylaşım Butonları
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "www.neocardapp.com/card/${selectedCardId}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.weight(1f),
-                        textAlign = TextAlign.Center,
-                        fontSize = 18.sp
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Image(
-                            painter = painterResource(id = R.drawable.copy),
-                            contentDescription = "Kopyala",
-                            modifier = Modifier
-                                .size(24.dp)
+                        // Link ve Paylaşım Butonları
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "www.neocardapp.com/card/${selectedCardId}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.weight(1f),
+                                textAlign = TextAlign.Center,
+                                fontSize = 18.sp
+                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.copy),
+                                    contentDescription = "Kopyala",
+                                    modifier = Modifier
+                                        .size(24.dp)
                                 .clickable { copyToClipboard(context, selectedCardId!!) },
                             colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
-                        )
-                        Image(
-                            painter = painterResource(id = R.drawable.export),
-                            contentDescription = "Paylaş",
-                            modifier = Modifier
-                                .size(24.dp)
+                                )
+                                Image(
+                                    painter = painterResource(id = R.drawable.export),
+                                    contentDescription = "Paylaş",
+                                    modifier = Modifier
+                                        .size(24.dp)
                                 .clickable { shareLink(context, selectedCardId!!) },
                             colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurface)
-                        )
+                                )
                             }
                         }
                     }
@@ -1127,10 +1167,10 @@ fun UserCardGallery(navController: NavHostController, filterType: String) {
                                             modifier = Modifier.size(24.dp)
                                         )
                                     }
-                                    Text(
-                                        text = if (isExporting) "Dışa Aktarılıyor..." else "Görsel Olarak Paylaş",
+                        Text(
+                                        text = if (isExporting) context.getString(R.string.exporting) else context.getString(R.string.share_as_image),
                                         style = MaterialTheme.typography.labelLarge
-                                    )
+                        )
                                 }
                             }
                         }
@@ -1141,7 +1181,7 @@ fun UserCardGallery(navController: NavHostController, filterType: String) {
 
                 // Kapat Butonu
                 Text(
-                    text = "Kapat",
+                    text = context.getString(R.string.close),
                     style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.primary),
                     modifier = Modifier.clickable { showSheet = false }
                 )
@@ -1178,7 +1218,7 @@ fun UserCardItem(card: UserCard, onClick: () -> Unit) {
         Box(
             modifier = Modifier
                 .fillMaxWidth(1f)
-                .background(parseBackground(card))
+                .background(parseBackground(card, context))
                 .padding(16.dp)
         ) {
             Column(
@@ -1241,10 +1281,29 @@ fun UserCardItem(card: UserCard, onClick: () -> Unit) {
     }
 }
 
-fun parseBackground(card: UserCard): Brush {
+fun parseBackground(card: UserCard, context: Context): Brush {
     return if (card.backgroundType == "GRADIENT") {
-        predefinedGradients.firstOrNull { it.first == card.selectedGradient }?.second
-            ?: Brush.verticalGradient(listOf(Color.Gray, Color.LightGray))
+        // Önce mevcut dilde eşleşme ara
+        var gradient = getPredefinedGradients(context).firstOrNull { it.first == card.selectedGradient }
+        
+        // Eğer bulunamazsa, diğer dillerde ara
+        if (gradient == null) {
+            val allGradients = listOf(
+                Pair("Gün Batımı", Brush.horizontalGradient(listOf(Color(0xFFFE6B8B), Color(0xFFFF8E53)))),
+                Pair("Sunset", Brush.horizontalGradient(listOf(Color(0xFFFE6B8B), Color(0xFFFF8E53)))),
+                Pair("Okyanus", Brush.horizontalGradient(listOf(Color(0xFF2196F3), Color(0xFF00BCD4)))),
+                Pair("Ocean", Brush.horizontalGradient(listOf(Color(0xFF2196F3), Color(0xFF00BCD4)))),
+                Pair("Orman", Brush.horizontalGradient(listOf(Color(0xFF4CAF50), Color(0xFF8BC34A)))),
+                Pair("Forest", Brush.horizontalGradient(listOf(Color(0xFF4CAF50), Color(0xFF8BC34A)))),
+                Pair("Gece", Brush.verticalGradient(listOf(Color(0xFF2C3E50), Color(0xFF3498DB)))),
+                Pair("Night", Brush.verticalGradient(listOf(Color(0xFF2C3E50), Color(0xFF3498DB)))),
+                Pair("Mor Sis", Brush.verticalGradient(listOf(Color(0xFF9C27B0), Color(0xFFE91E63)))),
+                Pair("Purple Mist", Brush.verticalGradient(listOf(Color(0xFF9C27B0), Color(0xFFE91E63))))
+            )
+            gradient = allGradients.firstOrNull { it.first == card.selectedGradient }
+        }
+        
+        gradient?.second ?: Brush.verticalGradient(listOf(Color.Gray, Color.LightGray))
     } else {
         Brush.verticalGradient(
             listOf(
@@ -1476,7 +1535,7 @@ fun UserCardItemForExport(card: UserCard, modifier: Modifier = Modifier) {
             .width(300.dp)
             .height(180.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(parseBackground(card))
+            .background(parseBackground(card, context))
             .padding(16.dp)
     ) {
         Column(
@@ -1556,11 +1615,12 @@ private suspend fun loadProfileImage(context: Context, imageUrl: String): androi
 // Kart Keşfet Bölümü (kompakt versiyon)
 @Composable
 fun ExploreCardsSection(navController: NavHostController) {
+    val context = LocalContext.current
     val firestore = FirebaseFirestore.getInstance()
     val auth = FirebaseAuth.getInstance()
     val currentUserId = auth.currentUser?.uid
 
-    var exploreCards by remember { mutableStateOf<List<ExploreUserCard>>(emptyList()) }
+    var exploreCards by remember { mutableStateOf<List<UserCard>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var searchQuery by remember { mutableStateOf("") }
 
@@ -1603,56 +1663,92 @@ fun ExploreCardsSection(navController: NavHostController) {
                         onError = { }
                     )
                 } else {
-                    firestore.collection("public_cards")
-                        .whereEqualTo("isPublic", true)
-                        .get()
-                        .addOnSuccessListener { querySnapshot ->
-                            try {
-                                val cards = querySnapshot.documents.mapNotNull { doc ->
+                    // Önce kullanıcının bağlantılarını al
+                    firestore.collection("users").document(currentUserId!!).get()
+                        .addOnSuccessListener { userDoc ->
+                            val connectedList = userDoc.get("connected") as? List<Map<String, String>> ?: emptyList()
+                            val connectedCardIds = connectedList.mapNotNull { it["cardId"] }.toSet()
+                            
+                            firestore.collection("public_cards")
+                                .whereEqualTo("isPublic", true)
+                                .get()
+                                .addOnSuccessListener { querySnapshot ->
                                     try {
-                                        // Eğer bu kart kullanıcının kendi kartıysa atla
-                                        val userId = doc.getString("userId") ?: ""
-                                        if (userId == currentUserId) {
-                                            return@mapNotNull null
+                                        // Her public kart için ilgili kullanıcının kartını çek ve filtre uygula
+                                        val tasks = mutableListOf<com.google.android.gms.tasks.Task<com.google.firebase.firestore.DocumentSnapshot>>()
+                                        val pairs = mutableListOf<Pair<String, String>>() // (userId, cardId)
+                                        querySnapshot.documents.forEach { doc ->
+                                            val userId = doc.getString("userId") ?: ""
+                                            val cardId = doc.id
+                                            // Kullanıcının bağlantılarında olmayan kartları filtrele
+                                            if (userId.isNotEmpty() && userId != currentUserId && !connectedCardIds.contains(cardId)) {
+                                                pairs.add(userId to cardId)
+                                                tasks.add(
+                                                    firestore.collection("users").document(userId)
+                                                        .collection("cards").document(cardId).get()
+                                                )
+                                            }
                                         }
-                                        
-                                        // Filtreleme yap
-                                        val name = doc.getString("name") ?: ""
-                                        val surname = doc.getString("surname") ?: ""
-                                        val title = doc.getString("title") ?: ""
-                                        val company = doc.getString("company") ?: ""
-                                        
-                                        if (name.contains(query, ignoreCase = true) || 
-                                            surname.contains(query, ignoreCase = true) || 
-                                            title.contains(query, ignoreCase = true) || 
-                                            company.contains(query, ignoreCase = true)) {
-                                            
-                                            ExploreUserCard(
-                                                id = doc.id,
-                                                name = name,
-                                                surname = surname,
-                                                title = title,
-                                                company = company,
-                                                cardType = doc.getString("cardType") ?: CardType.BUSINESS.name,
-                                                profileImageUrl = doc.getString("profileImageUrl") ?: "",
-                                                userId = userId,
-                                                isPublic = doc.getBoolean("isPublic") ?: true
-                                            )
-                                        } else null
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                        null
+
+                                com.google.android.gms.tasks.Tasks.whenAllComplete(tasks)
+                                    .addOnSuccessListener {
+                                        val resultCards = mutableListOf<UserCard>()
+                                        tasks.forEachIndexed { index, task ->
+                                            try {
+                                                val snapshot = task.result
+                                                if (snapshot != null && snapshot.exists()) {
+                                                    val base = snapshot.toObject(UserCard::class.java)?.copy(
+                                                        id = snapshot.id,
+                                                        cardType = snapshot.getString("cardType") ?: "Genel"
+                                                    )
+                                                    val textStylesMap = snapshot.get("textStyles") as? Map<String, Any>
+                                                    val parsed = if (base != null && textStylesMap != null) {
+                                                        val parsedTextStyles = mutableMapOf<String, TextStyleDTO>()
+                                                        textStylesMap.forEach { (key, value) ->
+                                                            val styleMap = value as? Map<String, Any>
+                                                            if (styleMap != null) {
+                                                                val textStyle = TextStyleDTO(
+                                                                    isBold = styleMap["isBold"] as? Boolean ?: false,
+                                                                    isItalic = styleMap["isItalic"] as? Boolean ?: false,
+                                                                    isUnderlined = styleMap["isUnderlined"] as? Boolean ?: false,
+                                                                    fontSize = (styleMap["fontSize"] as? Number)?.toFloat() ?: 16f,
+                                                                    color = styleMap["color"] as? String ?: "#000000"
+                                                                )
+                                                                parsedTextStyles[key] = textStyle
+                                                            }
+                                                        }
+                                                        base.copy(textStyles = parsedTextStyles)
+                                                    } else base
+
+                                                    // Arama filtresi uygula
+                                                    parsed?.let { c ->
+                                                        val matches = (c.name + " " + c.surname).contains(query, true) ||
+                                                            c.title.contains(query, true) ||
+                                                            c.company.contains(query, true)
+                                                        if (matches) resultCards.add(c)
+                                                    }
+                                                }
+                                            } catch (_: Exception) { }
+                                        }
+                                        exploreCards = resultCards
                                     }
-                                }
-                                exploreCards = cards
                             } catch (e: Exception) {
                                 e.printStackTrace()
                             }
                         }
+                        .addOnFailureListener {
+                            // Hata durumunda boş liste göster
+                            exploreCards = emptyList()
+                        }
+                    }
+                    .addOnFailureListener {
+                        // Kullanıcı bağlantıları alınamazsa boş liste göster
+                        exploreCards = emptyList()
+                    }
                 }
             },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("İsim, ünvan veya şirket ara...") },
+            placeholder = { Text(context.getString(R.string.search_placeholder)) },
             leadingIcon = {
                 Icon(
                     painter = painterResource(id = R.drawable.search),
@@ -1707,8 +1803,8 @@ fun ExploreCardsSection(navController: NavHostController) {
                                 colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f))
                             )
                             Text(
-                        text = if (searchQuery.isEmpty()) "Henüz keşfedilecek kart yok." 
-                               else "Aramanızla eşleşen kart bulunamadı.",
+                        text = if (searchQuery.isEmpty()) context.getString(R.string.no_cards_to_explore) 
+                               else context.getString(R.string.no_search_results),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                                 textAlign = TextAlign.Center
@@ -1721,10 +1817,9 @@ fun ExploreCardsSection(navController: NavHostController) {
                 contentPadding = PaddingValues(vertical = 8.dp, horizontal = 4.dp)
             ) {
                 items(exploreCards) { card ->
-                    ExploreCardItemCompact(
-                        card = card,
-                        navController = navController
-                    )
+                    UserCardItem(card = card) {
+                        navController.navigate(Screen.SharedCardDetail.createRoute(card.id))
+                    }
                 }
             }
 
@@ -1738,7 +1833,7 @@ fun ExploreCardsSection(navController: NavHostController) {
                 ) {
                     OutlinedButton(
                         onClick = {
-                            // TODO: Buraya tüm kartlar için bir sayfa eklenebilir
+                            navController.navigate(Screen.ExploreAllCards.route)
                         },
                         modifier = Modifier.padding(vertical = 8.dp)
                     ) {
@@ -1748,7 +1843,7 @@ fun ExploreCardsSection(navController: NavHostController) {
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Tümünü Gör")
+                        Text(context.getString(R.string.view_all))
                     }
                 }
             }
@@ -1896,7 +1991,7 @@ fun ExploreCardItemCompact(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
             Text(
-                    text = "Görüntüle",
+                    text = context.getString(R.string.view),
                     style = MaterialTheme.typography.labelMedium
                 )
             }
@@ -1923,80 +2018,121 @@ private fun loadExploreCards(
     currentUserId: String?,
     pageSize: Int,
     lastCardId: String?,
-    onSuccess: (List<ExploreUserCard>, String?, Boolean) -> Unit,
+    onSuccess: (List<UserCard>, String?, Boolean) -> Unit,
     onError: () -> Unit
 ) {
-    var query = firestore.collection("public_cards")
-        .whereEqualTo("isPublic", true)
-        .limit(pageSize.toLong())
-    
-    // Eğer son kart ID'si varsa, o karttan sonrasını getir
-    if (lastCardId != null) {
-        firestore.collection("public_cards")
-            .document(lastCardId)
-            .get()
-            .addOnSuccessListener { documentSnapshot ->
-                if (documentSnapshot.exists()) {
-                    query = firestore.collection("public_cards")
-                        .whereEqualTo("isPublic", true)
-                        .orderBy("id")
-                        .startAfter(documentSnapshot)
-                        .limit(pageSize.toLong())
-                    
-                    executeExploreQuery(query, pageSize, currentUserId, onSuccess, onError)
-                } else {
-                    onError()
-                }
-            }
-            .addOnFailureListener {
-                onError()
-            }
-    } else {
-        // İlk sayfayı getir
-        executeExploreQuery(query, pageSize, currentUserId, onSuccess, onError)
+    if (currentUserId == null) {
+        onError()
+        return
     }
+    
+    // Önce kullanıcının bağlantılarını al
+    firestore.collection("users").document(currentUserId).get()
+        .addOnSuccessListener { userDoc ->
+            val connectedList = userDoc.get("connected") as? List<Map<String, String>> ?: emptyList()
+            val connectedCardIds = connectedList.mapNotNull { it["cardId"] }.toSet()
+            
+            var query = firestore.collection("public_cards")
+                .whereEqualTo("isPublic", true)
+                .limit(pageSize.toLong())
+            
+            // Eğer son kart ID'si varsa, o karttan sonrasını getir
+            if (lastCardId != null) {
+                firestore.collection("public_cards")
+                    .document(lastCardId)
+                    .get()
+                    .addOnSuccessListener { documentSnapshot ->
+                        if (documentSnapshot.exists()) {
+                            query = firestore.collection("public_cards")
+                                .whereEqualTo("isPublic", true)
+                                .orderBy("id")
+                                .startAfter(documentSnapshot)
+                                .limit(pageSize.toLong())
+                            
+                            executeExploreQuery(query, pageSize, currentUserId, connectedCardIds, onSuccess, onError)
+                        } else {
+                            onError()
+                        }
+                    }
+                    .addOnFailureListener {
+                        onError()
+                    }
+            } else {
+                // İlk sayfayı getir
+                executeExploreQuery(query, pageSize, currentUserId, connectedCardIds, onSuccess, onError)
+            }
+        }
+        .addOnFailureListener {
+            onError()
+        }
 }
 
 private fun executeExploreQuery(
     query: com.google.firebase.firestore.Query,
     pageSize: Int,
     currentUserId: String?,
-    onSuccess: (List<ExploreUserCard>, String?, Boolean) -> Unit,
+    connectedCardIds: Set<String>,
+    onSuccess: (List<UserCard>, String?, Boolean) -> Unit,
     onError: () -> Unit
 ) {
     query.get()
         .addOnSuccessListener { querySnapshot ->
             try {
-                val cards = querySnapshot.documents.mapNotNull { doc ->
-                    try {
-                        // Eğer bu kart kullanıcının kendi kartıysa atla
-                        val userId = doc.getString("userId") ?: ""
-                        if (userId == currentUserId) {
-                            return@mapNotNull null
-                        }
-                        
-                        ExploreUserCard(
-                            id = doc.id,
-                            name = doc.getString("name") ?: "",
-                            surname = doc.getString("surname") ?: "",
-                            title = doc.getString("title") ?: "",
-                            company = doc.getString("company") ?: "",
-                            cardType = doc.getString("cardType") ?: CardType.BUSINESS.name,
-                            profileImageUrl = doc.getString("profileImageUrl") ?: "",
-                            userId = userId,
-                            isPublic = doc.getBoolean("isPublic") ?: true
+                val tasks = mutableListOf<com.google.android.gms.tasks.Task<com.google.firebase.firestore.DocumentSnapshot>>()
+                val publicDocs = mutableListOf<com.google.firebase.firestore.DocumentSnapshot>()
+                querySnapshot.documents.forEach { doc ->
+                    val userId = doc.getString("userId") ?: ""
+                    val cardId = doc.id
+                    // Kullanıcının bağlantılarında olmayan kartları filtrele
+                    if (userId.isNotEmpty() && userId != currentUserId && !connectedCardIds.contains(cardId)) {
+                        publicDocs.add(doc)
+                        tasks.add(
+                            FirebaseFirestore.getInstance()
+                                .collection("users").document(userId)
+                                .collection("cards").document(cardId).get()
                         )
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        null
                     }
                 }
-                
-                // Son kartın ID'sini ve daha fazla kart olup olmadığını belirle
-                val lastCardId = if (cards.isNotEmpty()) cards.last().id else null
-                val hasMoreCards = cards.size >= pageSize
-                
-                onSuccess(cards, lastCardId, hasMoreCards)
+
+                com.google.android.gms.tasks.Tasks.whenAllComplete(tasks)
+                    .addOnSuccessListener {
+                        val resultCards = mutableListOf<UserCard>()
+                        tasks.forEach { task ->
+                            try {
+                                val snapshot = task.result
+                                if (snapshot != null && snapshot.exists()) {
+                                    val base = snapshot.toObject(UserCard::class.java)?.copy(
+                                        id = snapshot.id,
+                                        cardType = snapshot.getString("cardType") ?: "Genel"
+                                    )
+                                    val textStylesMap = snapshot.get("textStyles") as? Map<String, Any>
+                                    val parsed = if (base != null && textStylesMap != null) {
+                                        val parsedTextStyles = mutableMapOf<String, TextStyleDTO>()
+                                        textStylesMap.forEach { (key, value) ->
+                                            val styleMap = value as? Map<String, Any>
+                                            if (styleMap != null) {
+                                                val textStyle = TextStyleDTO(
+                                                    isBold = styleMap["isBold"] as? Boolean ?: false,
+                                                    isItalic = styleMap["isItalic"] as? Boolean ?: false,
+                                                    isUnderlined = styleMap["isUnderlined"] as? Boolean ?: false,
+                                                    fontSize = (styleMap["fontSize"] as? Number)?.toFloat() ?: 16f,
+                                                    color = styleMap["color"] as? String ?: "#000000"
+                                                )
+                                                parsedTextStyles[key] = textStyle
+                                            }
+                                        }
+                                        base.copy(textStyles = parsedTextStyles)
+                                    } else base
+
+                                    parsed?.let { resultCards.add(it) }
+                                }
+                            } catch (_: Exception) {}
+                        }
+
+                        val lastCardId = if (resultCards.isNotEmpty()) resultCards.last().id else null
+                        val hasMoreCards = resultCards.size >= pageSize
+                        onSuccess(resultCards, lastCardId, hasMoreCards)
+                    }
             } catch (e: Exception) {
                 e.printStackTrace()
                 onError()

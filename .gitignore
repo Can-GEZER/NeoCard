@@ -31,6 +31,7 @@ outputs/
 # Keystore dosyaları (güvenlik için)
 *.jks
 *.keystore
+keystore/
 
 # APK ve Bundle dosyaları
 *.apk
@@ -132,4 +133,5 @@ vcs.xml
 *.hprof
 
 app/src/main/assets/service-account.json
+
 

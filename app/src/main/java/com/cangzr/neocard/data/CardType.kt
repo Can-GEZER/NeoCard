@@ -1,8 +1,10 @@
 package com.cangzr.neocard.data
 
+import android.content.Context
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import com.cangzr.neocard.R
 
 enum class CardType {
@@ -12,12 +14,18 @@ enum class CardType {
     SOCIAL,
     FREELANCE;
 
-    fun getTitle(): String = when (this) {
-        BUSINESS -> "İş Kartviziti"
-        PERSONAL -> "Kişisel Kartvizit"
-        EDUCATION -> "Eğitim Kartviziti"
-        SOCIAL -> "Sosyal Kartvizit"
-        FREELANCE -> "Freelance Kartvizit"
+    fun getTitle(context: Context): String = when (this) {
+        BUSINESS -> context.getString(R.string.card_type_business)
+        PERSONAL -> context.getString(R.string.card_type_personal)
+        EDUCATION -> context.getString(R.string.card_type_education)
+        SOCIAL -> context.getString(R.string.card_type_social)
+        FREELANCE -> context.getString(R.string.card_type_freelance)
+    }
+
+    @Composable
+    fun getTitle(): String {
+        val context = LocalContext.current
+        return getTitle(context)
     }
 
     fun getIcon(): Int = when (this) {
