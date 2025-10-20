@@ -338,6 +338,61 @@ class BillingManager private constructor(private val context: Context) {
         return result
     }
 
+    // Mevcut premium süresine yeni süre ekleme (promosyon kodu için)
+    fun extendPremiumWithPromoCode(userId: String, additionalDuration: Long): Boolean {
+        var result = false
+        try {
+            // Önce mevcut premium durumunu kontrol et
+            FirebaseFirestore.getInstance()
+                .collection("users")
+                .document(userId)
+                .get()
+                .addOnSuccessListener { document ->
+                    val currentEndTime = document.getLong("premiumEndTime") ?: 0L
+                    val currentTime = System.currentTimeMillis()
+                    
+                    // Eğer premium süresi geçmişse, şu andan itibaren başlat
+                    // Eğer hala aktifse, mevcut bitiş zamanına ekle
+                    val newEndTime = if (currentEndTime > currentTime) {
+                        currentEndTime + additionalDuration
+                    } else {
+                        currentTime + additionalDuration
+                    }
+                    
+                    // Güncelle
+                    FirebaseFirestore.getInstance()
+                        .collection("users")
+                        .document(userId)
+                        .update(
+                            mapOf(
+                                "premium" to true,
+                                "premiumEndTime" to newEndTime
+                            )
+                        )
+                        .addOnSuccessListener {
+                            if (FirebaseAuth.getInstance().currentUser?.uid == userId) {
+                                coroutineScope.launch {
+                                    _isPremium.emit(true)
+                                }
+                            }
+                            result = true
+                        }
+                        .addOnFailureListener {
+                            result = false
+                            checkPremiumStatus()
+                        }
+                }
+                .addOnFailureListener {
+                    result = false
+                    checkPremiumStatus()
+                }
+        } catch (e: Exception) {
+            result = false
+            checkPremiumStatus()
+        }
+        return result
+    }
+
     // UIController sınıfı için manuel tetikleme metodu
     fun refreshPremiumStatus() {
         checkPremiumStatus()

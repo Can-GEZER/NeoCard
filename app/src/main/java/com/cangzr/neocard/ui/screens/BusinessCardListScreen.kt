@@ -39,7 +39,7 @@ import com.cangzr.neocard.ads.InlineAdView
 import com.cangzr.neocard.ads.withAdItems
 import com.cangzr.neocard.data.model.UserCard
 import com.cangzr.neocard.data.model.TextStyleDTO
-import com.cangzr.neocard.ui.screens.getPredefinedGradients
+import com.cangzr.neocard.ui.screens.createcard.utils.CardCreationUtils
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -165,6 +165,15 @@ fun BusinessCardListScreen(navController: NavHostController) {
         filtered
     }
 
+    // Sayfalama için değişkenler
+    var allConnectedList by remember { mutableStateOf<List<Map<String, String>>>(emptyList()) }
+    var currentPage by remember { mutableStateOf(0) }
+    val pageSize = 10
+    var hasMoreCards by remember { mutableStateOf(true) }
+    var isLoadingMore by remember { mutableStateOf(false) }
+    var userTagsMap by remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) }
+    
+    // İlk veri yüklemesi
     LaunchedEffect(currentUser) {
         if (currentUser == null) {
             userCards = emptyList()
@@ -174,22 +183,61 @@ fun BusinessCardListScreen(navController: NavHostController) {
                 .addOnSuccessListener { document ->
                     val connectedList = document.get("connected") as? List<Map<String, String>> ?: emptyList()
                     val userTags = document.get("cardTags") as? Map<String, List<String>> ?: emptyMap()
+                    
+                    // Tüm bağlantı listesini ve etiketleri sakla
+                    allConnectedList = connectedList
+                    userTagsMap = userTags
 
                     if (connectedList.isEmpty()) {
                         userCards = emptyList()
                         isLoading = false
+                        hasMoreCards = false
                     } else {
-                        fetchConnectedCards(connectedList, userTags) { cardsWithTags ->
-                            userCards = cardsWithTags
-                            isLoading = false
-                        }
+                        // İlk sayfayı yükle
+                        fetchConnectedCards(
+                            connectedList = connectedList, 
+                            userTags = userTags, 
+                            onComplete = { cardsWithTags ->
+                                userCards = cardsWithTags
+                                isLoading = false
+                                // Daha fazla kart olup olmadığını kontrol et
+                                hasMoreCards = (pageSize * (currentPage + 1)) < connectedList.size
+                                currentPage = 1
+                            },
+                            pageSize = pageSize, 
+                            startIndex = 0
+                        )
                     }
                 }
                 .addOnFailureListener {
                     userCards = emptyList()
                     isLoading = false
+                    hasMoreCards = false
                 }
         }
+    }
+    
+    // Daha fazla kart yükleme fonksiyonu
+    fun loadMoreCards() {
+        if (!hasMoreCards || isLoadingMore || currentUser == null) return
+        
+        isLoadingMore = true
+        val startIndex = currentPage * pageSize
+        
+        fetchConnectedCards(
+            connectedList = allConnectedList,
+            userTags = userTagsMap,
+            onComplete = { newCards ->
+                // Mevcut kartlara yeni kartları ekle
+                userCards = userCards + newCards
+                isLoadingMore = false
+            },
+            pageSize = pageSize,
+            startIndex = startIndex
+        )
+        currentPage++
+        // Daha fazla kart olup olmadığını kontrol et
+        hasMoreCards = (pageSize * currentPage) < allConnectedList.size
     }
 
     // Etiket seçim dialog'u
@@ -549,6 +597,30 @@ fun BusinessCardListScreen(navController: NavHostController) {
                 ) {
                     items(itemsWithAds.size) { index ->
                         itemsWithAds[index]()
+                        
+                        // Son öğeye yaklaşıldığında daha fazla yükle
+                        if (index == itemsWithAds.size - 3 && hasMoreCards && !isLoadingMore) {
+                            LaunchedEffect(index) {
+                                loadMoreCards()
+                            }
+                        }
+                    }
+                    
+                    // Yükleme göstergesi
+                    if (isLoadingMore) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(30.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -559,7 +631,9 @@ fun BusinessCardListScreen(navController: NavHostController) {
 fun fetchConnectedCards(
     connectedList: List<Map<String, String>>,
     userTags: Map<String, List<String>>,
-    onComplete: (List<CardWithTags>) -> Unit
+    onComplete: (List<CardWithTags>) -> Unit,
+    pageSize: Int = 10,
+    startIndex: Int = 0
 ) {
     val firestore = FirebaseFirestore.getInstance()
     val allCards = mutableListOf<CardWithTags>()
@@ -570,13 +644,17 @@ fun fetchConnectedCards(
         return
     }
 
-    connectedList.forEach { connection ->
+    // Sayfalama için başlangıç ve bitiş indekslerini hesapla
+    val endIndex = minOf(startIndex + pageSize, connectedList.size)
+    val currentPageConnections = connectedList.subList(startIndex, endIndex)
+
+    currentPageConnections.forEach { connection ->
         val userId = connection["userId"]
         val cardId = connection["cardId"]
 
         if (userId.isNullOrEmpty() || cardId.isNullOrEmpty()) {
             fetchedCount++
-            if (fetchedCount == connectedList.size) {
+            if (fetchedCount == currentPageConnections.size) {
                 onComplete(allCards)
             }
             return@forEach
@@ -591,13 +669,13 @@ fun fetchConnectedCards(
                     allCards.add(CardWithTags(card, tags))
                 }
                 fetchedCount++
-                if (fetchedCount == connectedList.size) {
+                if (fetchedCount == currentPageConnections.size) {
                     onComplete(allCards)
                 }
             }
             .addOnFailureListener {
                 fetchedCount++
-                if (fetchedCount == connectedList.size) {
+                if (fetchedCount == currentPageConnections.size) {
                     onComplete(allCards)
                 }
             }
@@ -641,7 +719,7 @@ fun UserCardItem(card: UserCard, onClick: () -> Unit) {
                             model = ImageRequest.Builder(LocalContext.current)
                                 .data(card.profileImageUrl)
                                 .crossfade(true)
-                                .size(Size.ORIGINAL)
+                                .size(Size(192, 192)) // Tam olarak ihtiyaç duyulan boyut (64dp = 192px @3x)
                                 .memoryCacheKey(card.profileImageUrl)
                                 .diskCacheKey(card.profileImageUrl)
                                 .placeholder(R.drawable.logo3)
@@ -699,7 +777,7 @@ fun BusinessSocialIcon(iconRes: Int, color: Color) {
 fun parseBusinessBackground(card: UserCard, context: Context): Brush {
     return if (card.backgroundType == "GRADIENT") {
         // Önce mevcut dilde eşleşme ara
-        var gradient = getPredefinedGradients(context).firstOrNull { it.first == card.selectedGradient }
+        var gradient = CardCreationUtils.getPredefinedGradients(context).firstOrNull { it.first == card.selectedGradient }
         
         // Eğer bulunamazsa, diğer dillerde ara
         if (gradient == null) {

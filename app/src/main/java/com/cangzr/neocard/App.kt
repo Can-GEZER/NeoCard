@@ -1,6 +1,7 @@
 package com.cangzr.neocard
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -30,7 +31,10 @@ import com.cangzr.neocard.ui.screens.CardStatisticsScreen
 import com.cangzr.neocard.ui.components.BottomNavBar
 import com.cangzr.neocard.ui.screens.BusinessCardListScreen
 import com.cangzr.neocard.ui.screens.ExploreAllCardsScreen
+import com.cangzr.neocard.ui.screens.SplashScreen
+import com.cangzr.neocard.ui.screens.OnboardingScreen
 import com.cangzr.neocard.utils.LanguageManager
+import com.cangzr.neocard.utils.NetworkUtils
 import java.util.concurrent.TimeUnit
 
 @Composable
@@ -41,6 +45,9 @@ fun NeoCardApp(initialCardId: String? = null) {
     
     // AdManager örneğini başlat
     val adManager = remember { AdManager.getInstance(context) }
+    
+    // NetworkUtils örneğini başlat
+    val networkUtils = remember { NetworkUtils.getInstance(context) }
 
     // Dil ayarlarını uygula
     LaunchedEffect(Unit) {
@@ -78,15 +85,29 @@ fun NeoCardApp(initialCardId: String? = null) {
                 Screen.Business.route)
             
             if (currentRoute in mainRoutes) {
-                BottomNavBar(navController = navController)
+                Column {
+                    // Önce navigation bar
+                    BottomNavBar(navController = navController)
+                    // Sonra alt banner reklam
+                    BottomBannerAd()
+                }
             }
         }
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Home.route,
+            startDestination = Screen.Splash.route,
             modifier = Modifier.padding(paddingValues)
         ) {
+            // Splash ve Onboarding ekranları
+            composable(Screen.Splash.route) {
+                SplashScreen(navController = navController)
+            }
+            composable(Screen.Onboarding.route) {
+                OnboardingScreen(navController = navController)
+            }
+            
+            // Ana ekranlar
             composable(Screen.Home.route) {
                 HomeScreen(navController = navController)
             }

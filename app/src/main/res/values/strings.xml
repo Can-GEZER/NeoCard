@@ -44,9 +44,16 @@
     <string name="no_cards_created">Henüz kartvizit oluşturulmadı.\nYeni bir kartvizit eklemek için + simgesine tıklayın.</string>
     <string name="no_cards_of_type">Seçili tipte kartvizit bulunamadı.</string>
     <string name="card_actions">Kartvizit İşlemleri</string>
-    <string name="view_details">Detayları Görüntüle</string>
+    <string name="view_details">Detayları Gör</string>
     <string name="share_card">Kartvizit Paylaş</string>
     <string name="share">Paylaş</string>
+    <string name="share_coming_soon">Paylaşma özelliği yakında gelecek!</string>
+    <string name="share_link">Link ile Paylaş</string>
+    <string name="copy">Kopyala</string>
+    <string name="loading">Yükleniyor...</string>
+    <string name="share_image_description">Kartvizitinizi görsel olarak paylaşabilirsiniz</string>
+    <string name="previous">Önceki</string>
+    <string name="next_button">Sonraki</string>
     <string name="qr_code">QR Kod</string>
     <string name="image">Görsel</string>
     <string name="link_copied">Link kopyalandı</string>
@@ -126,6 +133,12 @@
     <string name="detailed_info_desc">Biyografi ve CV ekleme seçenekleri</string>
     <string name="ad_free">Reklamsız Deneyim</string>
     <string name="ad_free_desc">Kesintisiz premium deneyim</string>
+    <string name="advanced_analytics">Gelişmiş Analitikler</string>
+    <string name="advanced_analytics_desc">Detaylı görüntülenme ve etkileşim raporları</string>
+    <string name="priority_support">Öncelikli Destek</string>
+    <string name="priority_support_desc">24 saat içinde destek yanıtları</string>
+    <string name="nfc_sharing">NFC Paylaşımı</string>
+    <string name="nfc_sharing_desc">Cihazları yaklaştırarak kartvizit paylaşımı</string>
     <string name="discover_more_features">Premium ile daha fazla özellik keşfedin!</string>
     <string name="monthly_price">29.99₺</string>
     <string name="monthly">aylık</string>
@@ -148,6 +161,18 @@
     
     <string name="help_support_title">Yardım ve Destek</string>
     <string name="help_support_content">NeoCard kullanımı ile ilgili sorularınız ve teknik destek için aşağıdaki rehberi inceleyebilirsiniz:\n\n📱 Temel Kullanım\n\n1. Hesap Oluşturma\n• Google hesabınızla giriş yapın\n• İnternet bağlantınızı kontrol edin\n• E-posta adresinizin doğru olduğundan emin olun\n\n2. Kartvizit Oluşturma\n• Alt menüden \'+\' butonuna tıklayın\n• Kart tipini seçin (İş, Kişisel, Eğitim, Sosyal, Freelance)\n• Kişisel bilgilerinizi girin\n• Tasarım ve renk seçeneklerini özelleştirin\n• \'Kaydet\' butonuna tıklayın\n\n3. Kartvizit Paylaşımı\n• Kartınızın detay sayfasına gidin\n• QR kod ile paylaşım yapın\n• Link kopyalayarak paylaşın\n• Sosyal medyada paylaşın\n\n🔗 Bağlantı Yönetimi\n\n4. Bağlantı Ekleme\n• Keşfet bölümünden kartları görüntüleyin\n• \'Bağlantı Ekle\' butonuna tıklayın\n• Bağlantı istekleri \'Bağlantı İstekleri\' bölümünde görünür\n\n5. Bağlantı İstekleri\n• Profil sayfasından \'Bağlantı İstekleri\'ne gidin\n• Gelen istekleri onaylayın veya reddedin\n• Gönderdiğiniz isteklerin durumunu takip edin\n\n📊 Analitik ve İstatistikler\n\n6. Kartvizit İstatistikleri\n• Kartınızın detay sayfasına gidin\n• \'İstatistikler\' butonuna tıklayın\n• Görüntüleme sayılarını ve kaynakları görün\n\n💎 Premium Özellikler\n\n7. Premium Üyelik\n• Profil sayfasından \'Premium Üyelik\' butonuna tıklayın\n• Google Play Store üzerinden satın alın\n• Gelişmiş analitik raporlara erişin\n• Reklamsız deneyim yaşayın\n\n8. Promosyon Kodu\n• Profil sayfasında aktif kod varsa \'Promosyon Kodu Kullan\' kartı görünür\n• Kodunuzu girin ve 1 haftalık premium kazanın\n\n⚙️ Ayarlar ve Gizlilik\n\n9. Dil Değiştirme\n• Profil sayfasından \'Dil\' seçeneğine gidin\n• Türkçe veya İngilizce seçin\n\n10. Hesap Silme\n• Ayarlar menüsünden \'Hesabımı Sil\' seçeneğine gidin\n• Dikkat: Bu işlem geri alınamaz!\n\n📞 Destek ve İletişim\n\n• E-posta: support@neocard.app\n• Sorun bildirimi için uygulama içi geri bildirim kullanın\n• Destek ekibimiz 24-48 saat içinde yanıt verir\n\n💡 İpuçları\n\n• Kartınızı düzenli olarak güncelleyin\n• Profil fotoğrafı ekleyerek güvenilirliğinizi artırın\n• Sosyal medya linklerinizi ekleyin\n• Bağlantılarınızla düzenli olarak etkileşim kurun</string>
+    
+    <!-- Onboarding Strings -->
+    <string name="onboarding_title_1">Dijital Kartvizitinizi Oluşturun</string>
+    <string name="onboarding_desc_1">NeoCard ile profesyonel dijital kartvizitinizi oluşturun, özelleştirin ve hemen paylaşmaya başlayın.</string>
+    <string name="onboarding_title_2">Kolay Paylaşım</string>
+    <string name="onboarding_desc_2">QR kod, link veya görsel olarak kartvizitinizi saniyeler içinde paylaşın ve bağlantılarınızı genişletin.</string>
+    <string name="onboarding_title_3">Detaylı Analitikler</string>
+    <string name="onboarding_desc_3">Kartvizitinizin performansını izleyin, görüntülenme sayılarını ve etkileşimleri takip edin.</string>
+    <string name="skip">Atla</string>
+    <string name="next_onboarding">İleri</string>
+    <string name="get_started">Başla</string>
+    <string name="network_error_message">İnternet bağlantısı bulunamadı. Lütfen bağlantınızı kontrol edin. Bağlantı sağlandığında otomatik olarak devam edilecektir.</string>
     
     <!-- Connection Requests Section -->
     <string name="connection_requests">Bağlantı İstekleri</string>
@@ -309,7 +334,6 @@
     <string name="search_tags">Etiket ara...</string>
     
     <!-- Misc -->
-    <string name="loading">Yükleniyor...</string>
     <string name="error">Hata</string>
     <string name="retry">Tekrar Dene</string>
     <string name="ok">Tamam</string>
@@ -411,4 +435,8 @@
     <string name="gradient_forest">Orman</string>
     <string name="gradient_night">Gece</string>
     <string name="gradient_purple_mist">Mor Sis</string>
+    
+    <!-- Share Text -->
+    <string name="share_text_with_image">📱 NeoCard ile dijital kartvizitimi oluşturdum!\n\n</string>
+    <string name="view_my_card">Kartvizitimi görüntüle</string>
 </resources>

@@ -28,7 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import coil.compose.AsyncImage
 import com.cangzr.neocard.R
-import com.cangzr.neocard.ui.screens.UserCard
+import com.cangzr.neocard.data.model.UserCard
+import com.cangzr.neocard.data.model.TextStyleDTO
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -36,6 +37,7 @@ import coil.request.ImageRequest
 import coil.transform.CircleCropTransformation
 import coil.size.Size
 import com.cangzr.neocard.analytics.CardAnalyticsManager
+import com.cangzr.neocard.ads.BottomBannerAd
 
 // CompositionLocal değişkenleri
 val LocalCardId = compositionLocalOf<String?> { null }
@@ -252,6 +254,13 @@ fun SharedCardDetailScreen(
                     InfoDisplayColumn(
                         card = card, 
                         context = context
+                    )
+                    
+                    // Alt banner reklam
+                    BottomBannerAd(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
                     )
                 }
             }

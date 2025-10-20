@@ -4,7 +4,6 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,11 +38,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,358 +59,80 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.cangzr.neocard.R
 import com.cangzr.neocard.data.CardType
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import android.graphics.Bitmap
-import android.graphics.ImageDecoder
-import android.os.Build
-import android.provider.MediaStore
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.NavController
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.DocumentReference
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.tasks.await
-import androidx.compose.ui.draw.scale
-import android.content.Context
-
-@Composable
-fun SocialMediaIcon(iconRes: Int, contentDescription: String, tint: Color) {
-    Icon(
-        painter = painterResource(id = iconRes),
-        contentDescription = contentDescription,
-        modifier = Modifier.size(24.dp),
-        tint = tint
-    )
-}
-
-enum class TextType {
-    NAME_SURNAME, TITLE, COMPANY, EMAIL, PHONE
-}
-
-data class TextStyle(
-    var isBold: Boolean = false,
-    var isItalic: Boolean = false,
-    var isUnderlined: Boolean = false,
-    var fontSize: Float = 16f,
-    var color: Color = Color.Black
-)
-
-enum class BackgroundType {
-    SOLID, GRADIENT
-}
+import com.cangzr.neocard.ui.screens.createcard.components.CardTypeSelector
+import com.cangzr.neocard.ui.screens.createcard.components.ColorButton
+import com.cangzr.neocard.ui.screens.createcard.components.FormCardContent
+import com.cangzr.neocard.ui.screens.createcard.components.FormCardWithSwitch
+import com.cangzr.neocard.ui.screens.createcard.components.GradientButton
+import com.cangzr.neocard.ui.screens.createcard.components.PremiumInfoCard
+import com.cangzr.neocard.ui.screens.createcard.components.SocialMediaIcon
+import com.cangzr.neocard.ui.screens.createcard.utils.CardCreationUtils
+import com.cangzr.neocard.ui.screens.createcard.viewmodels.CreateCardViewModel
+import com.cangzr.neocard.ui.screens.createcard.viewmodels.BackgroundType
+import com.cangzr.neocard.ui.screens.createcard.viewmodels.TextType
+import com.cangzr.neocard.utils.ValidationUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateCardScreen(navController: NavController) {
     val context = LocalContext.current
-    var name by remember { mutableStateOf("") }
-    var surname by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var company by remember { mutableStateOf("") }
-    var title by remember { mutableStateOf("") }
-    var website by remember { mutableStateOf("") }
-    var linkedin by remember { mutableStateOf("") }
-    var instagram by remember { mutableStateOf("") }
-    var twitter by remember { mutableStateOf("") }
-    var facebook by remember { mutableStateOf("") }
-    var github by remember { mutableStateOf("") }
-    var backgroundColor by remember { mutableStateOf(Color.White) }
-    var backgroundType by remember { mutableStateOf(BackgroundType.SOLID) }
-    var selectedGradient by remember { mutableStateOf(getPredefinedGradients(context).first()) }
+    val viewModel: CreateCardViewModel = viewModel()
+
+    // ViewModel state
+    val name by viewModel.name.collectAsState()
+    val surname by viewModel.surname.collectAsState()
+    val phone by viewModel.phone.collectAsState()
+    val email by viewModel.email.collectAsState()
+    val company by viewModel.company.collectAsState()
+    val title by viewModel.title.collectAsState()
+    val website by viewModel.website.collectAsState()
+    val linkedin by viewModel.linkedin.collectAsState()
+    val instagram by viewModel.instagram.collectAsState()
+    val twitter by viewModel.twitter.collectAsState()
+    val facebook by viewModel.facebook.collectAsState()
+    val github by viewModel.github.collectAsState()
+    val backgroundColor by viewModel.backgroundColor.collectAsState()
+    val backgroundType by viewModel.backgroundType.collectAsState()
+    val selectedGradient by viewModel.selectedGradient.collectAsState()
+    val textStyles by viewModel.textStyles.collectAsState()
+    val selectedCardType by viewModel.selectedCardType.collectAsState()
+    val profileImageUri by viewModel.profileImageUri.collectAsState()
+    val selectedImageBitmap by viewModel.selectedImageBitmap.collectAsState()
+    val isPremium by viewModel.isPremium.collectAsState()
+    val showPremiumDialog by viewModel.showPremiumDialog.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val isPublic by viewModel.isPublic.collectAsState()
+
+    // Local state
     var selectedText by remember { mutableStateOf<TextType?>(null) }
-    var textStyles by remember {
-        mutableStateOf(
-            mapOf(
-                TextType.NAME_SURNAME to TextStyle(fontSize = 18f),
-                TextType.TITLE to TextStyle(fontSize = 16f),
-                TextType.COMPANY to TextStyle(fontSize = 14f),
-                TextType.EMAIL to TextStyle(fontSize = 14f),
-                TextType.PHONE to TextStyle(fontSize = 14f)
-            )
-        )
-    }
-    var selectedCardType by remember { mutableStateOf<CardType?>(null) }
-    var profileImageUri by remember { mutableStateOf<Uri?>(null) }
     var showImageOptions by remember { mutableStateOf(false) }
-    var selectedImageBitmap by remember { mutableStateOf<Bitmap?>(null) }
     var showEditDialog by remember { mutableStateOf(false) }
-    var isPremium by remember { mutableStateOf(false) }
-    var showPremiumDialog by remember { mutableStateOf(false) }
-    var isLoading by remember { mutableStateOf(false) }
-    var isPublic by remember { mutableStateOf(true) }
-
-    val firestore = FirebaseFirestore.getInstance()
-    val auth = FirebaseAuth.getInstance()
-    val currentUser = auth.currentUser
-
-    // Kullanıcının premium olup olmadığını kontrol et
-    LaunchedEffect(Unit) {
-        isPremium = isUserPremium()
-    }
-
-    fun Int.toHexColor(): String {
-        return String.format("#%06X", 0xFFFFFF and this)
-    }
-
-    fun clearForm() {
-        name = ""
-        surname = ""
-        phone = ""
-        email = ""
-        company = ""
-        title = ""
-        website = ""
-        linkedin = ""
-        instagram = ""
-        twitter = ""
-        facebook = ""
-        github = ""
-        backgroundColor = Color.White
-        backgroundType = BackgroundType.SOLID
-        selectedGradient = getPredefinedGradients(context).first()
-        selectedText = null
-        textStyles = mapOf(
-            TextType.NAME_SURNAME to TextStyle(fontSize = 18f),
-            TextType.TITLE to TextStyle(fontSize = 16f),
-            TextType.COMPANY to TextStyle(fontSize = 14f),
-            TextType.EMAIL to TextStyle(fontSize = 14f),
-            TextType.PHONE to TextStyle(fontSize = 14f)
-        )
-        profileImageUri = null
-        selectedImageBitmap = null
-        isPublic = true
-    }
 
     fun saveCard() {
-        if (currentUser == null) {
-            Toast.makeText(context, context.getString(R.string.please_login), Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        isLoading = true // Yükleme başladı
-        val userDocRef = firestore.collection("users").document(currentUser.uid)
-
-        // Coroutine scope içinde asenkron işlemleri yönet
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                // Premium kontrolü
-                val isPremiumUser = isUserPremium()
-                
-                if (!isPremiumUser) {
-                    // Premium olmayan kullanıcı kontrolü
-                    val cardCount = userDocRef.collection("cards").get().await().size()
-                    if (cardCount >= 1) {
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(context, context.getString(R.string.premium_card_limit), Toast.LENGTH_LONG).show()
-                            isLoading = false
-                        }
-                        return@launch
-                    }
-
-                    // Premium olmayan kullanıcı kısıtlamaları
-                    backgroundType = BackgroundType.SOLID
-                    textStyles = mapOf(
-                        TextType.NAME_SURNAME to TextStyle(fontSize = 18f),
-                        TextType.TITLE to TextStyle(fontSize = 16f),
-                        TextType.COMPANY to TextStyle(fontSize = 14f),
-                        TextType.EMAIL to TextStyle(fontSize = 14f),
-                        TextType.PHONE to TextStyle(fontSize = 14f)
-                    )
-                }
-
-                // Profil fotoğrafı varsa yükle
-                if (profileImageUri != null) {
-                    try {
-                        // Resmi küçült
-                        val bitmap = if (Build.VERSION.SDK_INT < 28) {
-                            MediaStore.Images.Media.getBitmap(context.contentResolver, profileImageUri)
-                        } else {
-                            val source = ImageDecoder.createSource(context.contentResolver, profileImageUri!!)
-                            ImageDecoder.decodeBitmap(source)
-                        }
-                        
-                        // Resmin boyutunu küçült (max 800x800)
-                        val maxSize = 800
-                        val scaledBitmap = if (bitmap.width > maxSize || bitmap.height > maxSize) {
-                            val ratio = minOf(maxSize.toFloat() / bitmap.width, maxSize.toFloat() / bitmap.height)
-                            val width = (bitmap.width * ratio).toInt()
-                            val height = (bitmap.height * ratio).toInt()
-                            Bitmap.createScaledBitmap(bitmap, width, height, true)
-                        } else {
-                            bitmap
-                        }
-                        
-                        // Bitmap'i JPEG formatına dönüştür
-                        val baos = java.io.ByteArrayOutputStream()
-                        scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos)
-                        val imageData = baos.toByteArray()
-                        
-                        // Firebase'e yükle
-                        val filename = "profile_${currentUser.uid}_${System.currentTimeMillis()}.jpg"
-                        val storageRef = FirebaseStorage.getInstance().reference
-                            .child("user_uploads/${currentUser.uid}/$filename")
-                        
-                        // Resmi yükle ve aşağıdaki işlemlere devam et
-                        val uploadTask = storageRef.putBytes(imageData).await()
-                        val profileImageUrl = storageRef.downloadUrl.await().toString()
-                        
-                        // Kart verilerini hazırla
-                        val cardData = hashMapOf(
-                            "name" to name,
-                            "surname" to surname,
-                            "phone" to phone,
-                            "email" to email,
-                            "company" to company,
-                            "title" to title,
-                            "website" to website,
-                            "linkedin" to linkedin,
-                            "instagram" to instagram,
-                            "twitter" to twitter,
-                            "facebook" to facebook,
-                            "github" to github,
-                            "backgroundType" to backgroundType.name,
-                            "backgroundColor" to backgroundColor.toArgb().toHexColor(),
-                            "selectedGradient" to selectedGradient.first,
-                            "profileImageUrl" to profileImageUrl,
-                            "cardType" to (selectedCardType?.name ?: "Genel"),
-                            "textStyles" to textStyles.mapKeys { it.key.name }.mapValues { (_, style) ->
-                                mapOf(
-                                    "isBold" to style.isBold,
-                                    "isItalic" to style.isItalic,
-                                    "isUnderlined" to style.isUnderlined,
-                                    "fontSize" to style.fontSize,
-                                    "color" to style.color.toArgb().toHexColor()
-                                )
-                            },
-                            "isPublic" to isPublic
-                        )
-        
-                        // Kartı kaydet
-                        userDocRef.collection("cards").add(cardData).await()
-                            .also { cardDocRef ->
-                                // Eğer kart herkese açık olarak işaretlendiyse, public_cards koleksiyonuna da ekle
-                                if (isPublic) {
-                                    val publicCardData = cardData.toMutableMap().apply {
-                                        put("id", cardDocRef.id)
-                                        put("userId", currentUser.uid)
-                                        put("isPublic", true)
-                                    }
-                                    
-                                    firestore.collection("public_cards")
-                                        .document(cardDocRef.id)
-                                        .set(publicCardData)
-                                        .await()
-                                }
-                            }
-        
-                        // UI'ı güncelle
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(context, context.getString(R.string.card_saved), Toast.LENGTH_SHORT).show()
-                            clearForm()
-                            isLoading = false
-                            navController.popBackStack() // Önceki sayfaya dön
-                        }
-                    } catch (e: Exception) {
-                        withContext(Dispatchers.Main) {
-                            isLoading = false
-                            Toast.makeText(context, context.getString(R.string.image_upload_error, e.localizedMessage ?: context.getString(R.string.unknown_error)), Toast.LENGTH_LONG).show()
-                        }
-                    }
-                } else {
-                    // Resim yoksa normal şekilde kartı kaydet
-                    val cardData = hashMapOf(
-                        "name" to name,
-                        "surname" to surname,
-                        "phone" to phone,
-                        "email" to email,
-                        "company" to company,
-                        "title" to title,
-                        "website" to website,
-                        "linkedin" to linkedin,
-                        "instagram" to instagram,
-                        "twitter" to twitter,
-                        "facebook" to facebook,
-                        "github" to github,
-                        "backgroundType" to backgroundType.name,
-                        "backgroundColor" to backgroundColor.toArgb().toHexColor(),
-                        "selectedGradient" to selectedGradient.first,
-                        "profileImageUrl" to "",
-                        "cardType" to (selectedCardType?.name ?: "Genel"),
-                        "textStyles" to textStyles.mapKeys { it.key.name }.mapValues { (_, style) ->
-                            mapOf(
-                                "isBold" to style.isBold,
-                                "isItalic" to style.isItalic,
-                                "isUnderlined" to style.isUnderlined,
-                                "fontSize" to style.fontSize,
-                                "color" to style.color.toArgb().toHexColor()
-                            )
-                        },
-                        "isPublic" to isPublic
-                    )
-    
-                    // Kartı kaydet
-                    userDocRef.collection("cards").add(cardData).await()
-                        .also { cardDocRef ->
-                            // Eğer kart herkese açık olarak işaretlendiyse, public_cards koleksiyonuna da ekle
-                            if (isPublic) {
-                                val publicCardData = cardData.toMutableMap().apply {
-                                    put("id", cardDocRef.id)
-                                    put("userId", currentUser.uid)
-                                    put("isPublic", true)
-                                }
-                                
-                                firestore.collection("public_cards")
-                                    .document(cardDocRef.id)
-                                    .set(publicCardData)
-                                    .await()
-                            }
-                        }
-    
-                    // UI'ı güncelle
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, context.getString(R.string.card_saved), Toast.LENGTH_SHORT).show()
-                        clearForm()
-                        isLoading = false
-                        navController.popBackStack() // Önceki sayfaya dön
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(context, context.getString(R.string.error_occurred, e.localizedMessage), Toast.LENGTH_LONG).show()
-                    isLoading = false
-                }
+        viewModel.saveCard(
+            context = context,
+            onSuccess = {
+                Toast.makeText(context, context.getString(R.string.card_saved), Toast.LENGTH_SHORT).show()
+                navController.popBackStack()
+            },
+            onError = { error ->
+                Toast.makeText(context, error, Toast.LENGTH_LONG).show()
             }
-        }
-    }
-
-    // Uri'den Bitmap oluşturma fonksiyonu
-    fun uriToBitmap(uri: Uri) {
-        try {
-            selectedImageBitmap = if (Build.VERSION.SDK_INT < 28) {
-                MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
-            } else {
-                val source = ImageDecoder.createSource(context.contentResolver, uri)
-                ImageDecoder.decodeBitmap(source)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        )
     }
 
     // Galeri launcher'ı
@@ -420,8 +140,11 @@ fun CreateCardScreen(navController: NavController) {
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            profileImageUri = it
-            uriToBitmap(it)
+            viewModel.updateProfileImageUri(it)
+            val bitmap = CardCreationUtils.uriToBitmap(it, context)
+            bitmap?.let { bmp ->
+                viewModel.updateSelectedImageBitmap(bmp)
+            }
             showEditDialog = true
         }
     }
@@ -447,8 +170,16 @@ fun CreateCardScreen(navController: NavController) {
 
                 Button(
                     onClick = { saveCard() },
-                    modifier = Modifier.wrapContentWidth()
+                    modifier = Modifier.wrapContentWidth(),
+                    enabled = !isLoading
                 ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
                     Text(context.getString(R.string.save))
                 }
             }
@@ -645,7 +376,7 @@ fun CreateCardScreen(navController: NavController) {
             // Premium avantajlarını gösteren dialog
             if (showPremiumDialog) {
                 AlertDialog(
-                    onDismissRequest = { showPremiumDialog = false },
+                    onDismissRequest = { viewModel.updateShowPremiumDialog(false) },
                     title = {
                         Text(
                                             text = context.getString(R.string.premium_benefits),
@@ -679,7 +410,7 @@ fun CreateCardScreen(navController: NavController) {
                     },
                     confirmButton = {
                         Button(
-                            onClick = { showPremiumDialog = false },
+                            onClick = { viewModel.updateShowPremiumDialog(false) },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary
@@ -738,8 +469,8 @@ fun CreateCardScreen(navController: NavController) {
                             if (profileImageUri != null) {
                                 Button(
                                     onClick = {
-                                        profileImageUri = null
-                                        selectedImageBitmap = null
+                                        viewModel.updateProfileImageUri(null)
+                                        viewModel.updateSelectedImageBitmap(null)
                                     },
                                     modifier = Modifier.fillMaxWidth(),
                                     colors = ButtonDefaults.buttonColors(
@@ -763,14 +494,14 @@ fun CreateCardScreen(navController: NavController) {
                 FormCardContent(title = context.getString(R.string.personal_info)) {
                     OutlinedTextField(
                         value = name,
-                        onValueChange = { name = it },
+                        onValueChange = { viewModel.updateName(it) },
                         label = { Text(context.getString(R.string.name)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = surname,
-                        onValueChange = { surname = it },
+                        onValueChange = { viewModel.updateSurname(it) },
                         label = { Text(context.getString(R.string.surname)) },
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -780,18 +511,32 @@ fun CreateCardScreen(navController: NavController) {
                 FormCardContent(title = context.getString(R.string.contact_info)) {
                     OutlinedTextField(
                         value = phone,
-                        onValueChange = { phone = it },
+                        onValueChange = { 
+                            val filteredInput = ValidationUtils.filterPhoneInput(it)
+                            viewModel.updatePhone(filteredInput)
+                        },
                         label = { Text(context.getString(R.string.phone)) },
                         leadingIcon = { Icon(Icons.Default.Phone, null) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = phone.isNotEmpty() && !ValidationUtils.isValidPhone(phone),
+                        supportingText = if (phone.isNotEmpty() && !ValidationUtils.isValidPhone(phone)) {
+                            { Text("Geçerli bir telefon numarası girin", color = MaterialTheme.colorScheme.error) }
+                        } else null
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = email,
-                        onValueChange = { email = it },
+                        onValueChange = { 
+                            val filteredInput = ValidationUtils.filterEmailInput(it)
+                            viewModel.updateEmail(filteredInput)
+                        },
                         label = { Text(context.getString(R.string.email)) },
                         leadingIcon = { Icon(Icons.Default.Email, null) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = email.isNotEmpty() && !ValidationUtils.isValidEmail(email),
+                        supportingText = if (email.isNotEmpty() && !ValidationUtils.isValidEmail(email)) {
+                            { Text("Geçerli bir email adresi girin", color = MaterialTheme.colorScheme.error) }
+                        } else null
                     )
                 }
 
@@ -799,7 +544,7 @@ fun CreateCardScreen(navController: NavController) {
                 FormCardContent(title = context.getString(R.string.business_info)) {
                     OutlinedTextField(
                         value = company,
-                        onValueChange = { company = it },
+                        onValueChange = { viewModel.updateCompany(it) },
                         label = { Text(context.getString(R.string.company)) },
                         leadingIcon = {
                             Icon(
@@ -814,7 +559,7 @@ fun CreateCardScreen(navController: NavController) {
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = title,
-                        onValueChange = { title = it },
+                        onValueChange = { viewModel.updateTitle(it) },
                         label = { Text(context.getString(R.string.title)) },
                         leadingIcon = {
                             Icon(
@@ -829,7 +574,10 @@ fun CreateCardScreen(navController: NavController) {
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = website,
-                        onValueChange = { website = it },
+                        onValueChange = { 
+                            val filteredInput = ValidationUtils.filterWebsiteInput(it)
+                            viewModel.updateWebsite(filteredInput)
+                        },
                         label = { Text(context.getString(R.string.website)) },
                         leadingIcon = {
                             Icon(
@@ -839,7 +587,11 @@ fun CreateCardScreen(navController: NavController) {
                                 tint = MaterialTheme.colorScheme.onSurface
                             )
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = website.isNotEmpty() && !ValidationUtils.isValidWebsite(website),
+                        supportingText = if (website.isNotEmpty() && !ValidationUtils.isValidWebsite(website)) {
+                            { Text("Geçerli bir website adresi girin (örn: example.com)", color = MaterialTheme.colorScheme.error) }
+                        } else null
                     )
                 }
 
@@ -847,37 +599,72 @@ fun CreateCardScreen(navController: NavController) {
                 FormCardContent(title = context.getString(R.string.social_media)) {
                     OutlinedTextField(
                         value = linkedin,
-                        onValueChange = { linkedin = it },
+                        onValueChange = { 
+                            val filteredInput = ValidationUtils.filterSocialInput(it)
+                            viewModel.updateLinkedin(filteredInput)
+                        },
                         label = { Text(context.getString(R.string.linkedin)) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = linkedin.isNotEmpty() && !ValidationUtils.isValidLinkedIn(linkedin),
+                        supportingText = if (linkedin.isNotEmpty() && !ValidationUtils.isValidLinkedIn(linkedin)) {
+                            { Text("Geçerli bir LinkedIn profili girin (örn: linkedin.com/in/username)", color = MaterialTheme.colorScheme.error) }
+                        } else null
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = github,
-                        onValueChange = { github = it },
+                        onValueChange = { 
+                            val filteredInput = ValidationUtils.filterSocialInput(it)
+                            viewModel.updateGithub(filteredInput)
+                        },
                         label = { Text(context.getString(R.string.github)) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = github.isNotEmpty() && !ValidationUtils.isValidGitHub(github),
+                        supportingText = if (github.isNotEmpty() && !ValidationUtils.isValidGitHub(github)) {
+                            { Text("Geçerli bir GitHub profili girin (örn: github.com/username)", color = MaterialTheme.colorScheme.error) }
+                        } else null
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = twitter,
-                        onValueChange = { twitter = it },
+                        onValueChange = { 
+                            val filteredInput = ValidationUtils.filterSocialInput(it)
+                            viewModel.updateTwitter(filteredInput)
+                        },
                         label = { Text(context.getString(R.string.twitter)) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = twitter.isNotEmpty() && !ValidationUtils.isValidTwitter(twitter),
+                        supportingText = if (twitter.isNotEmpty() && !ValidationUtils.isValidTwitter(twitter)) {
+                            { Text("Geçerli bir Twitter profili girin (örn: twitter.com/username)", color = MaterialTheme.colorScheme.error) }
+                        } else null
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = instagram,
-                        onValueChange = { instagram = it },
+                        onValueChange = { 
+                            val filteredInput = ValidationUtils.filterSocialInput(it)
+                            viewModel.updateInstagram(filteredInput)
+                        },
                         label = { Text(context.getString(R.string.instagram)) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = instagram.isNotEmpty() && !ValidationUtils.isValidInstagram(instagram),
+                        supportingText = if (instagram.isNotEmpty() && !ValidationUtils.isValidInstagram(instagram)) {
+                            { Text("Geçerli bir Instagram profili girin (örn: instagram.com/username)", color = MaterialTheme.colorScheme.error) }
+                        } else null
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = facebook,
-                        onValueChange = { facebook = it },
+                        onValueChange = { 
+                            val filteredInput = ValidationUtils.filterSocialInput(it)
+                            viewModel.updateFacebook(filteredInput)
+                        },
                         label = { Text(context.getString(R.string.facebook)) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = facebook.isNotEmpty() && !ValidationUtils.isValidFacebook(facebook),
+                        supportingText = if (facebook.isNotEmpty() && !ValidationUtils.isValidFacebook(facebook)) {
+                            { Text("Geçerli bir Facebook profili girin (örn: facebook.com/username)", color = MaterialTheme.colorScheme.error) }
+                        } else null
                     )
                 }
 
@@ -890,15 +677,15 @@ fun CreateCardScreen(navController: NavController) {
                     ) {
                         FilterChip(
                             selected = backgroundType == BackgroundType.SOLID,
-                            onClick = { backgroundType = BackgroundType.SOLID }, // SOLID her zaman seçilebilir
+                            onClick = { viewModel.updateBackgroundType(BackgroundType.SOLID) },
                             label = { Text(context.getString(R.string.solid_color)) },
-                            enabled = true // SOLID her zaman aktif
+                            enabled = true
                         )
                         FilterChip(
                             selected = backgroundType == BackgroundType.GRADIENT,
-                            onClick = { if (isPremium) backgroundType = BackgroundType.GRADIENT }, // GRADYAN sadece premium için
+                            onClick = { if (isPremium) viewModel.updateBackgroundType(BackgroundType.GRADIENT) },
                             label = { Text(context.getString(R.string.gradient)) },
-                            enabled = isPremium // GRADYAN sadece premium kullanıcılar için aktif
+                            enabled = isPremium
                         )
                     }
 
@@ -930,7 +717,7 @@ fun CreateCardScreen(navController: NavController) {
                                         color = color,
                                         selectedColor = backgroundColor,
                                         name = name,
-                                        onColorSelected = { backgroundColor = it } // Renk seçimi her zaman aktif
+                                        onColorSelected = { viewModel.updateBackgroundColor(it) }
                                     )
                                 }
                             }
@@ -941,12 +728,12 @@ fun CreateCardScreen(navController: NavController) {
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 contentPadding = PaddingValues(vertical = 8.dp)
                             ) {
-                                items(getPredefinedGradients(context)) { (name, brush) ->
+                                items(CardCreationUtils.getPredefinedGradients(context)) { (name, brush) ->
                                     GradientButton(
                                         name = name,
                                         brush = brush,
                                         isSelected = selectedGradient.first == name,
-                                        onSelect = { if (isPremium) selectedGradient = Pair(name, brush) }
+                                        onSelect = { if (isPremium) viewModel.updateSelectedGradient(Pair(name, brush)) }
                                     )
                                 }
                             }
@@ -967,29 +754,17 @@ fun CreateCardScreen(navController: NavController) {
                             ) {
                                 FilterChip(
                                     selected = style.isBold,
-                                    onClick = {
-                                        textStyles = textStyles.toMutableMap().apply {
-                                            this[selectedText!!] = style.copy(isBold = !style.isBold)
-                                        }
-                                    },
+                                    onClick = { viewModel.updateTextStyle(selectedText!!, style.copy(isBold = !style.isBold)) },
                                     label = { Text("B", fontWeight = FontWeight.Bold) }
                                 )
                                 FilterChip(
                                     selected = style.isItalic,
-                                    onClick = {
-                                        textStyles = textStyles.toMutableMap().apply {
-                                            this[selectedText!!] = style.copy(isItalic = !style.isItalic)
-                                        }
-                                    },
+                                    onClick = { viewModel.updateTextStyle(selectedText!!, style.copy(isItalic = !style.isItalic)) },
                                     label = { Text("I", fontStyle = FontStyle.Italic) }
                                 )
                                 FilterChip(
                                     selected = style.isUnderlined,
-                                    onClick = {
-                                        textStyles = textStyles.toMutableMap().apply {
-                                            this[selectedText!!] = style.copy(isUnderlined = !style.isUnderlined)
-                                        }
-                                    },
+                                    onClick = { viewModel.updateTextStyle(selectedText!!, style.copy(isUnderlined = !style.isUnderlined)) },
                                     label = { Text("U", textDecoration = TextDecoration.Underline) }
                                 )
                             }
@@ -1001,9 +776,7 @@ fun CreateCardScreen(navController: NavController) {
                             Slider(
                                 value = style.fontSize,
                                 onValueChange = { newSize ->
-                                    textStyles = textStyles.toMutableMap().apply {
-                                        this[selectedText!!] = style.copy(fontSize = newSize)
-                                    }
+                                    viewModel.updateTextStyle(selectedText!!, style.copy(fontSize = newSize))
                                 },
                                 valueRange = 12f..24f,
                                 steps = 11,
@@ -1038,9 +811,7 @@ fun CreateCardScreen(navController: NavController) {
                                         selectedColor = style.color,
                                         name = name,
                                         onColorSelected = { newColor ->
-                                            textStyles = textStyles.toMutableMap().apply {
-                                                this[selectedText!!] = style.copy(color = newColor)
-                                            }
+                                            viewModel.updateTextStyle(selectedText!!, style.copy(color = newColor))
                                         }
                                     )
                                 }
@@ -1060,7 +831,7 @@ fun CreateCardScreen(navController: NavController) {
                 // Kart Tipi Seçimi
                 CardTypeSelector(
                     selectedType = selectedCardType,
-                    onTypeSelected = { selectedCardType = it }
+                    onTypeSelected = { viewModel.updateSelectedCardType(it) }
                 )
                 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -1069,7 +840,7 @@ fun CreateCardScreen(navController: NavController) {
                 FormCardWithSwitch(
                     title = context.getString(R.string.visibility),
                     isChecked = isPublic,
-                    onCheckedChange = { isPublic = it }
+                    onCheckedChange = { viewModel.updateIsPublic(it) }
                 )
                 
                 Spacer(modifier = Modifier.height(80.dp))
@@ -1114,7 +885,7 @@ fun CreateCardScreen(navController: NavController) {
         contentAlignment = Alignment.BottomEnd
     ) {
         if (!isPremium) {
-            PremiumInfoCard(onClick = { showPremiumDialog = true })
+            PremiumInfoCard(onClick = { viewModel.updateShowPremiumDialog(true) })
         }
     }
 }
@@ -1149,281 +920,5 @@ fun PremiumInfoCard(onClick: () -> Unit) {
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }
-    }
-}
-
-@Composable
-private fun FormCardContent(
-    title: String,
-    content: @Composable () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            content()
-        }
-    }
-}
-
-@Composable
-private fun FormCardWithSwitch(
-    title: String,
-    isChecked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    content: @Composable () -> Unit = {}
-) {
-    val context = LocalContext.current
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.search),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
-                
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = if (isChecked) context.getString(R.string.on) else context.getString(R.string.off),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (isChecked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(end = 4.dp)
-                    )
-                    Switch(
-                        checked = isChecked,
-                        onCheckedChange = onCheckedChange,
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.primary,
-                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
-                            uncheckedThumbColor = MaterialTheme.colorScheme.outline,
-                            uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
-                        ),
-                        modifier = Modifier.scale(0.8f)
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(4.dp))
-            
-            // Seçime bağlı açıklama metni
-            Text(
-                text = if (isChecked) 
-                    context.getString(R.string.card_visible_to_all) 
-                else 
-                    context.getString(R.string.card_visible_to_shared),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 28.dp, top = 4.dp)
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            content()
-        }
-    }
-}
-
-@Composable
-private fun ColorButton(
-    color: Color,
-    selectedColor: Color,
-    name: String,
-    onColorSelected: (Color) -> Unit
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(50.dp)
-    ) {
-        Button(
-            onClick = { onColorSelected(color) },
-            modifier = Modifier.size(40.dp),
-            shape = RoundedCornerShape(8.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = color),
-            border = if (color == selectedColor) {
-                ButtonDefaults.outlinedButtonBorder
-            } else null
-        ) { }
-        Text(
-            text = name,
-            style = MaterialTheme.typography.bodySmall,
-            textAlign = TextAlign.Center,
-            maxLines = 1
-        )
-    }
-}
-
-@Composable
-fun GradientButton(
-    name: String,
-    brush: Brush,
-    isSelected: Boolean,
-    onSelect: () -> Unit
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(80.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(brush)
-                .clickable(onClick = onSelect)
-                .then(
-                    if (isSelected) {
-                        Modifier.border(
-                            2.dp,
-                            MaterialTheme.colorScheme.primary,
-                            RoundedCornerShape(8.dp)
-                        )
-                    } else Modifier
-                )
-        )
-        Text(
-            text = name,
-            style = MaterialTheme.typography.bodySmall,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            modifier = Modifier.padding(top = 4.dp)
-        )
-    }
-}
-
-// Önceden tanımlı gradyanlar
-fun getPredefinedGradients(context: Context) = listOf(
-    Pair(
-        context.getString(R.string.gradient_sunset),
-        Brush.horizontalGradient(listOf(Color(0xFFFE6B8B), Color(0xFFFF8E53)))
-    ),
-    Pair(
-        context.getString(R.string.gradient_ocean),
-        Brush.horizontalGradient(listOf(Color(0xFF2196F3), Color(0xFF00BCD4)))
-    ),
-    Pair(
-        context.getString(R.string.gradient_forest),
-        Brush.horizontalGradient(listOf(Color(0xFF4CAF50), Color(0xFF8BC34A)))
-    ),
-    Pair(
-        context.getString(R.string.gradient_night),
-        Brush.verticalGradient(listOf(Color(0xFF2C3E50), Color(0xFF3498DB)))
-    ),
-    Pair(
-        context.getString(R.string.gradient_purple_mist),
-        Brush.verticalGradient(listOf(Color(0xFF9C27B0), Color(0xFFE91E63)))
-    )
-)
-
-@Composable
-private fun CardTypeSelector(
-    selectedType: CardType?,
-    onTypeSelected: (CardType) -> Unit
-) {
-    val context = LocalContext.current
-                FormCardContent(title = context.getString(R.string.card_type)) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Text(
-                text = context.getString(R.string.select_card_purpose),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-            )
-
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(vertical = 8.dp)
-            ) {
-                items(CardType.entries.toTypedArray()) { type ->
-                    Card(
-                        modifier = Modifier
-                            .width(110.dp)
-                            .height(90.dp)
-                            .clickable { onTypeSelected(type) },
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (selectedType == type) {
-                                MaterialTheme.colorScheme.primaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.surface
-                            }
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                painter = painterResource(id = type.getIcon()),
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp),
-                                tint = if (selectedType == type) {
-                                    MaterialTheme.colorScheme.onPrimaryContainer
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface
-                                }
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = type.getTitle(),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (selectedType == type) {
-                                    MaterialTheme.colorScheme.onPrimaryContainer
-                                } else {
-                                    MaterialTheme.colorScheme.onSurface
-                                },
-                                textAlign = TextAlign.Center,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-// Kullanıcının premium olup olmadığını kontrol eden fonksiyon
-private suspend fun isUserPremium(): Boolean {
-    val currentUser = FirebaseAuth.getInstance().currentUser
-    return if (currentUser != null) {
-        val userDocRef = FirebaseFirestore.getInstance().collection("users").document(currentUser.uid)
-        val document = userDocRef.get().await()
-        document.getBoolean("premium") ?: false
-    } else {
-        false
     }
 }

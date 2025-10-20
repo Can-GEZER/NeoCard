@@ -64,6 +64,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
     implementation(libs.annotations)
     implementation(libs.com.google.firebase.firebase.auth.ktx)
     implementation(libs.firebase.firestore.ktx)
@@ -95,6 +96,9 @@ dependencies {
     
     // WorkManager
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+    
+    // DataStore - Preferences
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
     
     // AppCompat for language support
     implementation("androidx.appcompat:appcompat:1.6.1")

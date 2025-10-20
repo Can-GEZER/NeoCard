@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import com.cangzr.neocard.NeoCardApp
 import com.cangzr.neocard.ui.theme.NeoCardTheme
 import com.cangzr.neocard.utils.LanguageManager
+import com.cangzr.neocard.utils.NetworkUtils
 import com.google.firebase.FirebaseApp
 import com.google.firebase.crashlytics.FirebaseCrashlytics
 
@@ -35,6 +36,9 @@ class MainActivity : ComponentActivity() {
         
         // Apply language settings
         LanguageManager.applyLanguageFromPreference(this)
+        
+        // NetworkUtils örneğini başlat (uygulama genelinde kullanılabilmesi için)
+        NetworkUtils.getInstance(this)
         
         // Deep link ile gelen veriyi kontrol et
         val initialCardId = handleIntent(intent)
