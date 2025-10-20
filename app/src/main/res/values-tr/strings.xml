@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NeoCard</string>
+    
+    <!-- Card Types -->
+    <string name="card_type_business">İş Kartviziti</string>
+    <string name="card_type_personal">Kişisel Kartvizit</string>
+    <string name="card_type_education">Eğitim Kartviziti</string>
+    <string name="card_type_social">Sosyal Kartvizit</string>
+    <string name="card_type_freelance">Freelance Kartvizit</string>
+    <string name="card_type_all">Tümü</string>
+    
+    <!-- Auth Screen -->
+    <string name="welcome_to_neocard">NeoCard\'a Hoş Geldiniz</string>
+    <string name="login_to_manage_cards">Kartvizitlerinizi yönetmek için giriş yapın</string>
+    <string name="sign_in_with_google">Google ile Giriş Yap</string>
+    <string name="privacy_policy_agreement">Google hesabınızla giriş yaparak, Gizlilik Politikası ve Kullanım Koşullarını kabul etmiş olursunuz.</string>
+    <string name="login_successful">Giriş başarılı</string>
+    <string name="registration_successful">Kayıt başarılı</string>
+    <string name="network_error">İnternet bağlantınızı kontrol edin</string>
+    <string name="login_error">Giriş sırasında bir hata oluştu: %s</string>
+    <string name="registration_error">Kayıt sırasında bir hata oluştu: %s</string>
+    <string name="google_signin_error">Google ile giriş yapılamadı: %d</string>
+    <string name="email_empty">E-posta adresi boş olamaz</string>
+    <string name="email_invalid">Geçerli bir e-posta adresi giriniz</string>
+    <string name="password_min_length">Şifre en az 6 karakter olmalıdır</string>
+    <string name="password_digit">Şifre en az bir rakam içermelidir</string>
+    <string name="password_letter">Şifre en az bir harf içermelidir</string>
+    <string name="name_empty">Ad boş olamaz</string>
+    <string name="name_min_length">Ad en az 2 karakter olmalıdır</string>
+    <string name="surname_empty">Soyad boş olamaz</string>
+    <string name="surname_min_length">Soyad en az 2 karakter olmalıdır</string>
+    <string name="email_already_in_use">Bu e-posta adresi zaten kullanımda</string>
+    <string name="invalid_password">Hatalı şifre</string>
+    <string name="user_not_found">Bu e-posta adresi ile kayıtlı kullanıcı bulunamadı</string>
+    
+    <!-- Home Screen -->
+    <string name="my_cards">Kartvizitlerim</string>
+    <string name="select_card_type">Kart tipini seç</string>
+    <string name="explore_other_cards">Diğer Kartvizitleri Keşfet</string>
+    <string name="login_to_create_cards">Kartvizitlerinizi oluşturup yönetmek için giriş yapın</string>
+    <string name="login">Giriş Yap</string>
+    <string name="no_cards_created">Henüz kartvizit oluşturulmadı.\nYeni bir kartvizit eklemek için + simgesine tıklayın.</string>
+    <string name="no_cards_of_type">Seçili tipte kartvizit bulunamadı.</string>
+    <string name="card_actions">Kartvizit İşlemleri</string>
+    <string name="view_details">Detayları Görüntüle</string>
+    <string name="share_card">Kartvizit Paylaş</string>
+    <string name="share">Paylaş</string>
+    <string name="qr_code">QR Kod</string>
+    <string name="visual">Görsel</string>
+    <string name="link_copied">Link kopyalandı</string>
+    <string name="share_error">Paylaşım yapılırken bir hata oluştu</string>
+    <string name="close">Kapat</string>
+    <string name="view">Görüntüle</string>
+    <string name="exporting">Dışa Aktarılıyor...</string>
+    <string name="share_as_image">Görsel Olarak Paylaş</string>
+    <string name="search_hint">İsim, ünvan veya şirket ara...</string>
+    <string name="no_cards_to_explore">Henüz keşfedilecek kart yok.</string>
+    <string name="no_search_results">Aramanızla eşleşen kart bulunamadı.</string>
+    <string name="view_all">Tümünü Gör</string>
+    <string name="created_with_neocard">NeoCard ile oluşturuldu</string>
+    
+    <!-- Card Detail Screen -->
+    <string name="edit">Düzenle</string>
+    <string name="delete">Sil</string>
+    <string name="confirm_delete">Bu kartviziti silmek istediğinizden emin misiniz?</string>
+    <string name="yes">Evet</string>
+    <string name="no">Hayır</string>
+    <string name="card_deleted">Kartvizit başarıyla silindi</string>
+    <string name="delete_error">Kartvizit silinirken bir hata oluştu</string>
+    
+    <!-- Profile Screen -->
+    <string name="profile">Profil</string>
+    <string name="edit_profile">Profili Düzenle</string>
+    <string name="logout">Çıkış Yap</string>
+    <string name="language">Dil</string>
+    <string name="language_english">İngilizce</string>
+    <string name="language_turkish">Türkçe</string>
+    <string name="theme">Tema</string>
+    <string name="theme_light">Açık</string>
+    <string name="theme_dark">Koyu</string>
+    <string name="theme_system">Sistem</string>
+    <string name="premium">Premium</string>
+    <string name="upgrade_to_premium">Premium\'a Yükselt</string>
+    <string name="premium_features">Premium Özellikler</string>
+    <string name="settings">Ayarlar</string>
+    <string name="about">Hakkında</string>
+    <string name="help">Yardım</string>
+    <string name="privacy_policy">Gizlilik Politikası</string>
+    <string name="terms_of_service">Kullanım Koşulları</string>
+    <string name="version">Versiyon</string>
+    
+    <!-- Create Card Screen -->
+    <string name="create_card">Kartvizit Oluştur</string>
+    <string name="edit_card">Kartvizit Düzenle</string>
+    <string name="personal_info">Kişisel Bilgiler</string>
+    <string name="name">Ad</string>
+    <string name="surname">Soyad</string>
+    <string name="title">Ünvan</string>
+    <string name="company">Şirket</string>
+    <string name="phone">Telefon</string>
+    <string name="email">E-posta</string>
+    <string name="contact_info">İletişim Bilgileri</string>
+    <string name="website">Web Sitesi</string>
+    <string name="social_media">Sosyal Medya</string>
+    <string name="linkedin">LinkedIn</string>
+    <string name="twitter">Twitter</string>
+    <string name="instagram">Instagram</string>
+    <string name="facebook">Facebook</string>
+    <string name="github">GitHub</string>
+    <string name="card_type">Kart Tipi</string>
+    <string name="design">Tasarım</string>
+    <string name="background_color">Arkaplan Rengi</string>
+    <string name="background_gradient">Arkaplan Gradyanı</string>
+    <string name="text_style">Metin Stili</string>
+    <string name="save">Kaydet</string>
+    <string name="cancel">İptal</string>
+    <string name="card_saved">Kartvizit başarıyla kaydedildi</string>
+    <string name="save_error">Kartvizit kaydedilirken bir hata oluştu</string>
+    <string name="fill_required_fields">Lütfen gerekli alanları doldurun</string>
+    <string name="upload_profile_picture">Profil Resmi Yükle</string>
+    <string name="remove_profile_picture">Profil Resmini Kaldır</string>
+    <string name="uploading">Yükleniyor...</string>
+    <string name="upload_error">Resim yüklenirken bir hata oluştu</string>
+    <string name="preview">Önizleme</string>
+    
+    <!-- Connection Requests -->
+    <string name="connection_requests">Bağlantı İstekleri</string>
+    <string name="accept">Kabul Et</string>
+    <string name="reject">Reddet</string>
+    <string name="no_connection_requests">Bağlantı isteği yok</string>
+    <string name="request_accepted">Bağlantı isteği kabul edildi</string>
+    <string name="request_rejected">Bağlantı isteği reddedildi</string>
+    
+    <!-- Card Statistics -->
+    <string name="card_statistics">Kart İstatistikleri</string>
+    <string name="views">Görüntülenme</string>
+    <string name="saves">Kaydetme</string>
+    <string name="connections">Bağlantılar</string>
+    <string name="today">Bugün</string>
+    <string name="this_week">Bu Hafta</string>
+    <string name="this_month">Bu Ay</string>
+    <string name="all_time">Tüm Zamanlar</string>
+    <string name="no_statistics">İstatistik bulunamadı</string>
+    
+    <!-- Shared Card Detail -->
+    <string name="connect">Bağlan</string>
+    <string name="save_card">Kartı Kaydet</string>
+    <string name="connection_request_sent">Bağlantı isteği gönderildi</string>
+    <string name="card_saved_to_contacts">Kart rehbere kaydedildi</string>
+    <string name="already_connected">Zaten bağlısınız</string>
+    <string name="request_pending">İstek beklemede</string>
+    <string name="bio">Biyografi</string>
+    <string name="cv">CV</string>
+    
+    <!-- Business Card List -->
+    <string name="my_connections">Bağlantılarım</string>
+    <string name="no_connections">Henüz bağlantı yok</string>
+    <string name="search_connections">Bağlantılarda ara</string>
+    
+    <!-- Misc -->
+    <string name="loading">Yükleniyor...</string>
+    <string name="error">Hata</string>
+    <string name="retry">Tekrar Dene</string>
+    <string name="ok">Tamam</string>
+    <string name="user">Kullanıcı</string>
+    <string name="no_email">E-posta adresi yok</string>
+    <string name="login_prompt">Giriş yapın</string>
+    
+    <!-- Promosyon Kodu -->
+    <string name="promo_code_use">Promosyon Kodu Kullan</string>
+    <string name="promo_code_weekly_premium">1 haftalık ücretsiz premium</string>
+    <string name="promo_code_dialog_title">Promosyon Kodu Kullan</string>
+    <string name="promo_code_dialog_description">Promosyon kodunuzu girerek 1 haftalık premium üyeliğin keyfini çıkarın!</string>
+    <string name="promo_code_label">Promosyon Kodu</string>
+    <string name="promo_code_use_button">Kullan</string>
+    <string name="promo_code_cancel">İptal</string>
+    <string name="promo_code_invalid">Geçersiz promosyon kodu</string>
+    <string name="promo_code_not_found">Promosyon kodu bulunamadı</string>
+    <string name="promo_code_expired">Bu promosyon kodu artık geçerli değil</string>
+    <string name="promo_code_limit_reached">Bu promosyon kodu maksimum kullanım sayısına ulaştı</string>
+    <string name="promo_code_already_used">Bu promosyon kodunu daha önce kullanmışsınız</string>
+    <string name="promo_code_success">Promosyon kodu başarıyla kullanıldı! 1 haftalık premium üyelik aktif edildi.</string>
+    <string name="premium_activation_error">Premium üyelik etkinleştirilirken bir hata oluştu.</string>
+</resources>
