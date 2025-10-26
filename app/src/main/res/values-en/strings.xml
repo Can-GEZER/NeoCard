@@ -274,6 +274,19 @@
     <string name="email_not_found">Email not found</string>
     <string name="card_id_format">Card ID: %s...</string>
     
+    <!-- Notifications Screen -->
+    <string name="notifications">Notifications</string>
+    <string name="no_notifications">No notifications yet</string>
+    <string name="mark_all_as_read">Mark All as Read</string>
+    <string name="notification_connection_request">Connection Request</string>
+    <string name="notification_connection_accepted">Connection Accepted</string>
+    <string name="notification_card_updated">Card Updated</string>
+    <string name="just_now">Just now</string>
+    <string name="minutes_ago">%d minutes ago</string>
+    <string name="hours_ago">%d hours ago</string>
+    <string name="days_ago">%d days ago</string>
+    <string name="weeks_ago">%d weeks ago</string>
+    
     <!-- Card Statistics -->
     <string name="card_statistics">Card Statistics</string>
     <string name="views">Views</string>

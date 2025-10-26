@@ -2,14 +2,17 @@ package com.cangzr.neocard.ui.screens.carddetail.utils
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import com.cangzr.neocard.R
 import com.cangzr.neocard.data.model.UserCard
+import com.cangzr.neocard.notifications.NotificationManager
 import com.cangzr.neocard.storage.FirebaseStorageManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 object CardDetailRepository {
@@ -78,6 +81,27 @@ object CardDetailRepository {
                     .document(cardId)
                     .set(publicCardData)
                     .addOnSuccessListener {
+                        // Kartvizit güncelleme bildirimi gönder
+                        CoroutineScope(Dispatchers.IO).launch {
+                            try {
+                                // Güncellenen karttan doğrudan isim bilgisini al
+                                val userName = card.name
+                                val userSurname = card.surname
+                                
+                                // Bildirim gönder
+                                NotificationManager.sendCardUpdatedNotification(
+                                    cardOwnerId = userId,
+                                    cardOwnerName = userName,
+                                    cardOwnerSurname = userSurname,
+                                    cardId = cardId
+                                )
+                                
+                                Log.d("CardDetailRepository", "Kartvizit güncelleme bildirimi gönderildi: $userName $userSurname")
+                            } catch (e: Exception) {
+                                Log.e("CardDetailRepository", "Bildirim gönderilirken hata oluştu", e)
+                            }
+                        }
+                        
                         onSuccess()
                     }
                     .addOnFailureListener { e ->

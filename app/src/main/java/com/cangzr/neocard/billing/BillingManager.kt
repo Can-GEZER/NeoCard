@@ -34,12 +34,10 @@ class BillingManager private constructor(private val context: Context) {
                 handlePurchase(purchase)
             }
         } else if (billingResult.responseCode == BillingClient.BillingResponseCode.USER_CANCELED) {
-            // Kullanıcı satın alma işlemini iptal etti - durumu yeniden kontrol et
-            checkPremiumStatus()
-        } else {
-            // Diğer hata durumlarında da durumu güncelle
-            checkPremiumStatus()
+            // Kullanıcı satın alma işlemini iptal etti - sadece Firestore'dan kontrol et
+            checkFirestorePremiumStatus()
         }
+        // Diğer hata durumlarında hiçbir şey yapma, döngüsel çağrıları önle
     }
 
     private val billingClient = BillingClient.newBuilder(context)
@@ -58,15 +56,14 @@ class BillingManager private constructor(private val context: Context) {
         premiumCheckJob?.cancel()
         premiumCheckJob = coroutineScope.launch {
             while (isActive) {
-                delay(300000) // Her 5 dakikada bir kontrol et (daha düşük sıklık)
+                delay(1800000) // Her 30 dakikada bir kontrol et (daha düşük sıklık)
                 if (isActive) {
                     // Önce BillingClient üzerinden kontrol et
                     if (billingClient.isReady) {
                         queryPurchases() 
                     } else {
-                        startBillingConnection()
-                        delay(1000)
-                        checkPremiumStatus()
+                        // Bağlantı yoksa sadece Firestore'dan kontrol et
+                        checkFirestorePremiumStatus()
                     }
                 }
             }
@@ -121,30 +118,27 @@ class BillingManager private constructor(private val context: Context) {
                     if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                         // Satın alma başarılı, premium durumunu güncelle
                         updatePremiumStatus(true)
-                    } else {
-                        // Hata durumunda tekrar kontrol et
-                        checkPremiumStatus()
                     }
+                    // Hata durumunda hiçbir şey yapma, döngüsel çağrıları önle
                 }
             } else {
                 updatePremiumStatus(true)
             }
         } else if (purchase.purchaseState == Purchase.PurchaseState.PENDING) {
-            // Bekleyen satın alma - durumu değiştirme ama takip et
+            // Bekleyen satın alma - 30 saniye sonra tekrar kontrol et
             coroutineScope.launch {
-                delay(10000) // 10 saniye sonra tekrar kontrol et
-                queryPurchases() // Satın alma durumunu yeniden kontrol et
+                delay(30000)
+                if (billingClient.isReady) {
+                    queryPurchases()
+                }
             }
-        } else {
-            // Diğer durumlarda premium durumunu güncelle (iptal edilmiş olabilir)
-            checkPremiumStatus()
         }
+        // Diğer durumlarda hiçbir şey yapma
     }
 
     private fun queryPurchases() {
         if (!billingClient.isReady) {
-            startBillingConnection()
-            return
+            return // Bağlantı yoksa çıkış yap, döngüsel çağrıları önle
         }
         
         try {
@@ -166,18 +160,18 @@ class BillingManager private constructor(private val context: Context) {
                         }
                     }
                     
-                    // Aktif premium satın alma yoksa ve şu anda premium görünüyorsa, durumu güncelle
-                    if (!hasPremiumPurchase && _isPremium.value) {
-                        checkPremiumStatus()
+                    // Aktif premium satın alma yoksa, Firestore'dan kontrol et
+                    if (!hasPremiumPurchase) {
+                        checkFirestorePremiumStatus()
                     }
-                } else {
-                    // Hata durumunda tekrar dene
+                } else if (billingResult.responseCode != BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE) {
+                    // Sadece SERVICE_UNAVAILABLE değilse retry et
                     retryQueryPurchases()
                 }
+                // Diğer hata durumlarında hiçbir şey yapma
             }
         } catch (e: Exception) {
-            // Exception durumunda tekrar dene
-            retryQueryPurchases()
+            // Exception'da hiçbir şey yapma, döngüsel çağrıları önle
         }
     }
     
@@ -185,14 +179,15 @@ class BillingManager private constructor(private val context: Context) {
         purchaseQueryRetryCount++
         if (purchaseQueryRetryCount <= MAX_PURCHASE_QUERY_RETRY) {
             coroutineScope.launch {
-                // Her denemede bekleme süresini arttır
-                delay(1000L * purchaseQueryRetryCount)
-                queryPurchases()
+                // Her denemede bekleme süresini arttır (exponential backoff)
+                delay(2000L * purchaseQueryRetryCount)
+                if (billingClient.isReady) {
+                    queryPurchases()
+                }
             }
         } else {
-            // Maksimum deneme sayısına ulaşıldı, Firestore durumunu kontrol et
+            // Maksimum deneme sayısına ulaşıldı, sadece sayacı sıfırla
             purchaseQueryRetryCount = 0
-            checkPremiumStatus()
         }
     }
 
@@ -227,10 +222,8 @@ class BillingManager private constructor(private val context: Context) {
 
                     billingClient.launchBillingFlow(activity, billingFlowParams)
                 }
-            } else {
-                // Ürün detayları alınamadı, premium durumunu kontrol et
-                checkPremiumStatus()
             }
+            // Ürün detayları alınamazsa hiçbir şey yapma
         }
     }
 
@@ -255,20 +248,14 @@ class BillingManager private constructor(private val context: Context) {
                     }
                 }
                 .addOnFailureListener {
-                    // Hata durumunda tekrar kontrol et
-                    checkPremiumStatus()
+                    // Hata durumunda önceki durumu koru, döngüsel çağrıları önle
                 }
         }
     }
 
-    fun checkPremiumStatus() {
+    // Sadece Firestore'dan premium durumunu kontrol et
+    private fun checkFirestorePremiumStatus() {
         FirebaseAuth.getInstance().currentUser?.let { user ->
-            // Önce billingClient üzerinden kontrol et
-            if (billingClient.isReady) {
-                queryPurchases()
-            }
-            
-            // Firestore kontrolü
             FirebaseFirestore.getInstance()
                 .collection("users")
                 .document(user.uid)
@@ -302,6 +289,23 @@ class BillingManager private constructor(private val context: Context) {
             }
         }
     }
+
+    fun checkPremiumStatus() {
+        FirebaseAuth.getInstance().currentUser?.let { user ->
+            // Önce billingClient üzerinden kontrol et
+            if (billingClient.isReady) {
+                queryPurchases()
+            } else {
+                // BillingClient hazır değilse sadece Firestore'dan kontrol et
+                checkFirestorePremiumStatus()
+            }
+        } ?: run {
+            // Kullanıcı giriş yapmamış - premium değil
+            coroutineScope.launch {
+                _isPremium.emit(false)
+            }
+        }
+    }
     
     // Promosyon kodundan premium üyelik verdikten sonra sona erme tarihini yönetmek için
     fun setPremiumWithPromoCode(userId: String, duration: Long): Boolean {
@@ -327,13 +331,9 @@ class BillingManager private constructor(private val context: Context) {
                 }
                 .addOnFailureListener {
                     result = false
-                    // Hata durumunda durumu yeniden kontrol et
-                    checkPremiumStatus()
                 }
         } catch (e: Exception) {
             result = false
-            // Hata durumunda durumu yeniden kontrol et
-            checkPremiumStatus()
         }
         return result
     }
@@ -379,16 +379,13 @@ class BillingManager private constructor(private val context: Context) {
                         }
                         .addOnFailureListener {
                             result = false
-                            checkPremiumStatus()
                         }
                 }
                 .addOnFailureListener {
                     result = false
-                    checkPremiumStatus()
                 }
         } catch (e: Exception) {
             result = false
-            checkPremiumStatus()
         }
         return result
     }

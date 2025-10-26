@@ -230,6 +230,8 @@ fun ConnectionRequestCard(
     onAccept: () -> Unit,
     onReject: () -> Unit
 ) {
+    val context = LocalContext.current
+    
     Card(
         modifier = Modifier
             .width(240.dp)
@@ -285,48 +287,44 @@ fun ConnectionRequestCard(
                 }
             }
 
-            // Butonlar
+            // Butonlar - Sadece ikonlarla, evrensel ve her zaman sığar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Button(
                     onClick = onAccept,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(40.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     ),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(0.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Check,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = "Kabul",
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(start = 4.dp)
+                        contentDescription = context.getString(R.string.accept),
+                        modifier = Modifier.size(20.dp)
                     )
                 }
                 
                 Button(
                     onClick = onReject,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(40.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error
                     ),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(0.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = "Reddet",
-                        style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.padding(start = 4.dp)
+                        contentDescription = context.getString(R.string.reject),
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }

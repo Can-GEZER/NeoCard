@@ -132,6 +132,19 @@
     <string name="request_accepted">Bağlantı isteği kabul edildi</string>
     <string name="request_rejected">Bağlantı isteği reddedildi</string>
     
+    <!-- Notifications Screen -->
+    <string name="notifications">Bildirimler</string>
+    <string name="no_notifications">Henüz bildirim yok</string>
+    <string name="mark_all_as_read">Tümünü Okundu İşaretle</string>
+    <string name="notification_connection_request">Bağlantı İsteği</string>
+    <string name="notification_connection_accepted">Bağlantı Kabul Edildi</string>
+    <string name="notification_card_updated">Kartvizit Güncellendi</string>
+    <string name="just_now">Az önce</string>
+    <string name="minutes_ago">%d dakika önce</string>
+    <string name="hours_ago">%d saat önce</string>
+    <string name="days_ago">%d gün önce</string>
+    <string name="weeks_ago">%d hafta önce</string>
+    
     <!-- Card Statistics -->
     <string name="card_statistics">Kart İstatistikleri</string>
     <string name="views">Görüntülenme</string>

@@ -33,6 +33,7 @@ import com.cangzr.neocard.ui.screens.BusinessCardListScreen
 import com.cangzr.neocard.ui.screens.ExploreAllCardsScreen
 import com.cangzr.neocard.ui.screens.SplashScreen
 import com.cangzr.neocard.ui.screens.OnboardingScreen
+import com.cangzr.neocard.ui.screens.NotificationsScreen
 import com.cangzr.neocard.utils.LanguageManager
 import com.cangzr.neocard.utils.NetworkUtils
 import java.util.concurrent.TimeUnit
@@ -150,6 +151,9 @@ fun NeoCardApp(initialCardId: String? = null) {
             }
             composable(Screen.ExploreAllCards.route) {
                 ExploreAllCardsScreen(navController = navController)
+            }
+            composable(Screen.Notifications.route) {
+                NotificationsScreen(navController = navController)
             }
         }
     }

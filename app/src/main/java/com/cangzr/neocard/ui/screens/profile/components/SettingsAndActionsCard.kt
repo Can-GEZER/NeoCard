@@ -68,7 +68,13 @@ fun SettingsAndActionsCard(
             onDeleteConfirmed = {
                 showDeleteDialog = false
                 UserUtils.deleteAccount(context) { success: Boolean, message: String ->
-                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                    if (success) {
+                        // Hesap silindikten sonra auth ekranına yönlendir
+                        navController.navigate("auth") {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
                 }
             }
         )

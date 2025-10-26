@@ -60,9 +60,11 @@
     <string name="share_error">Paylaşım yapılırken bir hata oluştu</string>
     <string name="close">Kapat</string>
     <string name="view">Görüntüle</string>
+    <string name="visual">Görsel</string>
     <string name="exporting">Dışa Aktarılıyor...</string>
     <string name="share_as_image">Görsel Olarak Paylaş</string>
     <string name="search_placeholder">İsim, ünvan veya şirket ara...</string>
+    <string name="search_hint">İsim, ünvan veya şirket ara...</string>
     <string name="no_cards_to_explore">Henüz keşfedilecek kart yok.</string>
     <string name="no_search_results">Aramanızla eşleşen kart bulunamadı.</string>
     <string name="view_all">Tümünü Gör</string>
@@ -177,6 +179,19 @@
     <!-- Connection Requests Section -->
     <string name="connection_requests">Bağlantı İstekleri</string>
     <string name="no_connection_requests">Henüz bir bağlantı isteği bulunmuyor.</string>
+    
+    <!-- Notifications Screen -->
+    <string name="notifications">Bildirimler</string>
+    <string name="no_notifications">Henüz bildirim yok</string>
+    <string name="mark_all_as_read">Tümünü Okundu İşaretle</string>
+    <string name="notification_connection_request">Bağlantı İsteği</string>
+    <string name="notification_connection_accepted">Bağlantı Kabul Edildi</string>
+    <string name="notification_card_updated">Kartvizit Güncellendi</string>
+    <string name="just_now">Az önce</string>
+    <string name="minutes_ago">%d dakika önce</string>
+    <string name="hours_ago">%d saat önce</string>
+    <string name="days_ago">%d gün önce</string>
+    <string name="weeks_ago">%d hafta önce</string>
     
     <!-- Delete Account Dialog -->
     <string name="delete_account_title">Hesabı Sil</string>

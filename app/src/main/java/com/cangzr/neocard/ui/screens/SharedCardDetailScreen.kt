@@ -38,6 +38,10 @@ import coil.transform.CircleCropTransformation
 import coil.size.Size
 import com.cangzr.neocard.analytics.CardAnalyticsManager
 import com.cangzr.neocard.ads.BottomBannerAd
+import com.cangzr.neocard.notifications.NotificationManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 // CompositionLocal değişkenleri
 val LocalCardId = compositionLocalOf<String?> { null }
@@ -481,39 +485,118 @@ fun sendConnectionRequest(
     val firestore = FirebaseFirestore.getInstance()
     val requestData = mapOf("userId" to currentUserId, "cardId" to cardId)
 
-    // Önce gönderen kullanıcının bilgilerini al
+    // Gönderen kullanıcının kartından isim bilgilerini al
     firestore.collection("users").document(currentUserId)
-        .collection("cards").document(cardId)
+        .collection("cards")
+        .limit(1)
         .get()
-        .addOnSuccessListener { cardDoc ->
-            val senderCard = cardDoc.toObject(UserCard::class.java)
+        .addOnSuccessListener { cardsSnapshot ->
+            android.util.Log.d("ConnectionRequest", "Gönderen kullanıcının kart sayısı: ${cardsSnapshot.size()}")
             
-            // Bağlantı isteğini gönder
-            firestore.collection("users").document(targetUserId)
-                .update("connectRequests", FieldValue.arrayUnion(requestData))
-                .addOnSuccessListener {
-                    // Bildirim oluştur
-                    val notification = Notification(
-                        userId = targetUserId,
-                        title = context.getString(R.string.new_connection_request),
-                        message = context.getString(R.string.connection_request_message, "${senderCard?.name} ${senderCard?.surname}"),
-                        type = "CONNECTION_REQUEST",
-                        relatedId = cardId
-                    )
-
-                    // Bildirimi kaydet
-                    firestore.collection("notifications")
-                        .add(notification)
-                        .addOnSuccessListener { notificationRef ->
-                            // Kullanıcının bildirimlerini güncelle
-                            firestore.collection("users")
-                                .document(targetUserId)
-                                .update("notifications", FieldValue.arrayUnion(notificationRef.id))
-                        }
-
-                    Toast.makeText(context, context.getString(R.string.connection_request_sent), Toast.LENGTH_SHORT).show()
-                    onSuccess()
+            var senderName = "Bilinmeyen"
+            var senderSurname = "Kullanıcı"
+            
+            if (!cardsSnapshot.isEmpty) {
+                val firstCard = cardsSnapshot.documents[0].toObject(com.cangzr.neocard.data.model.UserCard::class.java)
+                senderName = firstCard?.name ?: "Bilinmeyen"
+                senderSurname = firstCard?.surname ?: "Kullanıcı"
+                android.util.Log.d("ConnectionRequest", "Karttan alınan isim: $senderName $senderSurname")
+            } else {
+                android.util.Log.d("ConnectionRequest", "Kullanıcının kartı bulunamadı, users koleksiyonundan deneniyor")
+                
+                // Kart yoksa users koleksiyonundan dene
+                firestore.collection("users").document(currentUserId)
+                    .get()
+                    .addOnSuccessListener { userDoc ->
+                        val displayName = userDoc.getString("displayName") ?: "Bilinmeyen Kullanıcı"
+                        val nameParts = displayName.split(" ", limit = 2)
+                        senderName = nameParts.getOrNull(0) ?: "Bilinmeyen"
+                        senderSurname = nameParts.getOrNull(1) ?: "Kullanıcı"
+                        android.util.Log.d("ConnectionRequest", "Users'dan alınan isim: $senderName $senderSurname")
+                        
+                        // Bildirimi gönder
+                        sendNotificationWithNames(firestore, targetUserId, cardId, context, senderName, senderSurname, onSuccess)
+                    }
+                return@addOnSuccessListener
+            }
+            
+            // Bildirimi gönder
+            sendNotificationWithNames(firestore, targetUserId, cardId, context, senderName, senderSurname, onSuccess)
+        }
+        .addOnFailureListener { e ->
+            android.util.Log.e("ConnectionRequest", "Kart bilgileri alınamadı", e)
+            // Fallback olarak users koleksiyonundan dene
+            firestore.collection("users").document(currentUserId)
+                .get()
+                .addOnSuccessListener { userDoc ->
+                    val displayName = userDoc.getString("displayName") ?: "Bilinmeyen Kullanıcı"
+                    val nameParts = displayName.split(" ", limit = 2)
+                    val senderName = nameParts.getOrNull(0) ?: "Bilinmeyen"
+                    val senderSurname = nameParts.getOrNull(1) ?: "Kullanıcı"
+                    
+                    sendNotificationWithNames(firestore, targetUserId, cardId, context, senderName, senderSurname, onSuccess)
                 }
+        }
+}
+
+// Yardımcı fonksiyon - bildirimi gönder
+private fun sendNotificationWithNames(
+    firestore: FirebaseFirestore,
+    targetUserId: String,
+    cardId: String,
+    context: android.content.Context,
+    senderName: String,
+    senderSurname: String,
+    onSuccess: () -> Unit
+) {
+    val requestData = mapOf("userId" to FirebaseAuth.getInstance().currentUser?.uid, "cardId" to cardId)
+    
+    android.util.Log.d("ConnectionRequest", "Bildirim gönderiliyor: $senderName $senderSurname")
+    
+    // Bağlantı isteğini gönder
+    firestore.collection("users").document(targetUserId)
+        .update("connectRequests", FieldValue.arrayUnion(requestData))
+        .addOnSuccessListener {
+            // Bildirim oluştur
+            val notification = Notification(
+                userId = targetUserId,
+                title = context.getString(R.string.new_connection_request),
+                message = context.getString(R.string.connection_request_message, "$senderName $senderSurname"),
+                type = "CONNECTION_REQUEST",
+                relatedId = cardId
+            )
+
+            // Bildirimi kaydet
+            firestore.collection("notifications")
+                .add(notification)
+                .addOnSuccessListener { notificationRef ->
+                    // Kullanıcının bildirimlerini güncelle
+                    firestore.collection("users")
+                        .document(targetUserId)
+                        .update("notifications", FieldValue.arrayUnion(notificationRef.id))
+                }
+
+            // 🔥 Push notification gönder
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    NotificationManager.sendConnectionRequestNotification(
+                        targetUserId = targetUserId,
+                        senderName = senderName,
+                        senderSurname = senderSurname,
+                        cardId = cardId
+                    )
+                } catch (e: Exception) {
+                    // Push notification gönderilemezse sadece log yazdır, işlemi durdurmaz
+                    android.util.Log.e("ConnectionRequest", "Push notification gönderilemedi", e)
+                }
+            }
+
+            Toast.makeText(context, context.getString(R.string.connection_request_sent), Toast.LENGTH_SHORT).show()
+            onSuccess()
+        }
+        .addOnFailureListener { e ->
+            android.util.Log.e("ConnectionRequest", "Bağlantı isteği gönderilemedi", e)
+            Toast.makeText(context, "Bağlantı isteği gönderilemedi", Toast.LENGTH_SHORT).show()
         }
 }
 

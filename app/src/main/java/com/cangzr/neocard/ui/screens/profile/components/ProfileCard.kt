@@ -54,6 +54,7 @@ fun ProfileCard(navController: NavHostController) {
     var userDisplayName by remember { mutableStateOf("") }
     var userPhotoUrl by remember { mutableStateOf<String?>(null) }
     val currentUser = remember { mutableStateOf(auth.currentUser) }
+    var unreadNotificationCount by remember { mutableStateOf(0) }
 
     val isLoggedIn = currentUser.value != null
 
@@ -73,6 +74,17 @@ fun ProfileCard(navController: NavHostController) {
                             firestore.collection("users").document(user.uid)
                                 .update("displayName", userDisplayName)
                         }
+                    }
+                }
+            
+            // Okunmamış bildirim sayısını dinle
+            firestore.collection("users")
+                .document(user.uid)
+                .collection("notifications")
+                .whereEqualTo("read", false)
+                .addSnapshotListener { snapshot, error ->
+                    if (error == null && snapshot != null) {
+                        unreadNotificationCount = snapshot.size()
                     }
                 }
         }
@@ -164,16 +176,34 @@ fun ProfileCard(navController: NavHostController) {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        IconButton(
-                            onClick = { navController.navigate("notifications") },
-                            modifier = Modifier.size(32.dp)
+                        // Bildirim ikonu (Badge ile)
+                        androidx.compose.material3.BadgedBox(
+                            badge = {
+                                if (unreadNotificationCount > 0) {
+                                    androidx.compose.material3.Badge(
+                                        containerColor = MaterialTheme.colorScheme.error
+                                    ) {
+                                        Text(
+                                            text = if (unreadNotificationCount > 99) "99+" else unreadNotificationCount.toString(),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontSize = 10.sp
+                                        )
+                                    }
+                                }
+                            }
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Notifications,
-                                contentDescription = "Bildirimler",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                            IconButton(
+                                onClick = { navController.navigate("notifications") },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Notifications,
+                                    contentDescription = "Bildirimler",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
+                        
                         IconButton(
                             onClick = {
                                 FirebaseAuth.getInstance().signOut()

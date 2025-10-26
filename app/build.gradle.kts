@@ -14,7 +14,7 @@ android {
     signingConfigs {
         create("release") {
             // Bu bilgileri local.properties dosyasından okuyacak
-            storeFile = file("../keystore/neocard-release-key.jks")
+            storeFile = file("C:\\Users\\erdhan\\Desktop\\Uygulama JKS Anahtarları\\neocard.jks")
             storePassword = project.findProperty("KEYSTORE_PASSWORD") as String? ?: ""
             keyAlias = project.findProperty("KEY_ALIAS") as String? ?: ""
             keyPassword = project.findProperty("KEY_PASSWORD") as String? ?: ""
@@ -71,6 +71,8 @@ dependencies {
     implementation(libs.google.firebase.storage.ktx)
     implementation(libs.firebase.analytics) // Firebase Analytics eklendi
     implementation("com.google.firebase:firebase-crashlytics-ktx")
+    implementation("com.google.firebase:firebase-messaging-ktx") // Firebase Cloud Messaging eklendi
+    implementation("com.google.firebase:firebase-functions-ktx") // Firebase Functions eklendi
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

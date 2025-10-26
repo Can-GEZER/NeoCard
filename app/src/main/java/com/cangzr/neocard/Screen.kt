@@ -19,4 +19,5 @@ sealed class Screen(val route: String) {
         fun createRoute(cardId: String) = "statistics/$cardId"
     }
     object ExploreAllCards : Screen("explore_all_cards")
+    object Notifications : Screen("notifications")
 }
