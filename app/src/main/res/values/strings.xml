@@ -454,4 +454,7 @@
     <!-- Share Text -->
     <string name="share_text_with_image">📱 NeoCard ile dijital kartvizitimi oluşturdum!\n\n</string>
     <string name="view_my_card">Kartvizitimi görüntüle</string>
+    
+    <!-- Error Messages -->
+    <string name="error_loading_cards">Kartlar yüklenirken hata oluştu</string>
 </resources>

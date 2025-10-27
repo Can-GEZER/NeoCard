@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,9 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -23,288 +20,291 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.cangzr.neocard.R
 import com.cangzr.neocard.Screen
-import com.cangzr.neocard.data.model.UserCard
 import com.cangzr.neocard.data.CardType
-import com.cangzr.neocard.ui.screens.home.utils.onAppear
-import com.cangzr.neocard.ui.screens.home.utils.loadCards
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import androidx.compose.ui.platform.LocalContext
+import com.cangzr.neocard.data.model.UserCard
+import com.cangzr.neocard.ui.screens.home.viewmodels.HomeViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UserCardGallery(
-    navController: NavHostController, 
+    navController: NavHostController,
     filterType: String,
-    onCardSelected: ((UserCard) -> Unit)? = null
+    onCardSelected: (UserCard) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val allFilterText = context.getString(R.string.all)
-    val auth = FirebaseAuth.getInstance()
-    val firestore = FirebaseFirestore.getInstance()
-    val currentUser = auth.currentUser
-
-    var cards by remember { mutableStateOf<List<UserCard>>(emptyList()) }
-    var filteredCards by remember { mutableStateOf<List<UserCard>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(true) }
-    var isLoadingMore by remember { mutableStateOf(false) }
-    var selectedCard by remember { mutableStateOf<UserCard?>(null) }
+    val viewModel: HomeViewModel = hiltViewModel()
     
-    // Bottom sheet state
-    val bottomSheetState = rememberModalBottomSheetState()
-    var showBottomSheet by remember { mutableStateOf(false) }
+    // Collect paging items
+    val userCards = viewModel.userCardsPagingFlow.collectAsLazyPagingItems()
     
-    // Navigation için LaunchedEffect
-    LaunchedEffect(selectedCard) {
-        selectedCard?.let { card ->
-            // Dialog'u HomeScreen'de göstermek için callback kullan
-            onCardSelected?.invoke(card)
-            selectedCard = null // Reset after selection
+    // Remember computed values
+    val allFilterText = remember { context.getString(R.string.all) }
+    val isAuthenticated = remember { viewModel.isUserAuthenticated() }
+    
+    // Use derivedStateOf for filtered cards to avoid recomposition
+    val filteredCards = remember(filterType, allFilterText) {
+        derivedStateOf {
+            if (filterType == allFilterText) {
+                userCards
+            } else {
+                // Filter will be applied in UI layer
+                userCards
+            }
         }
-    }
+    }.value
     
-    // Pagination için değişkenler
-    var lastVisibleCard by remember { mutableStateOf<String?>(null) }
-    var hasMoreCards by remember { mutableStateOf(true) }
-    val pageSize = 10
+    UserCardGalleryContent(
+        userCards = userCards,
+        filterType = filterType,
+        allFilterText = allFilterText,
+        isAuthenticated = isAuthenticated,
+        onCardSelected = onCardSelected,
+        onNavigateToAuth = { navController.navigate(Screen.Auth.route) },
+        modifier = modifier
+    )
+}
 
-    // İlk veri yüklemesi
-    LaunchedEffect(currentUser) {
-        if (currentUser != null) {
-            loadCards(
-                userId = currentUser.uid,
-                firestore = firestore,
-                pageSize = pageSize,
-                lastCardId = null,
-                onSuccess = { newCards, lastId, hasMore ->
-                    cards = newCards
-                    // Filtreleme işlemi
-                    filteredCards = if (filterType == allFilterText) {
-                        newCards
-                    } else {
-                        newCards.filter { card ->
-                            val cardTypeTitle = try {
-                                CardType.valueOf(card.cardType).getTitle(context)
-                            } catch (e: IllegalArgumentException) {
-                                card.cardType
-                            }
-                            cardTypeTitle == filterType
-                        }
-                    }
-                    lastVisibleCard = lastId
-                    hasMoreCards = hasMore
-                    isLoading = false
-                },
-                onError = {
-                    isLoading = false
-                }
-            )
-        } else {
-            // Kullanıcı giriş yapmamış, yükleme durumunu kapat
-            isLoading = false
-        }
-    }
-
-    // Filtreleme değiştiğinde yeniden filtrele
-    LaunchedEffect(filterType, cards) {
-        filteredCards = if (filterType == allFilterText) {
-            cards
-        } else {
-            // CardType enum'ları ile karşılaştırma yap
-            cards.filter { card ->
+@Composable
+private fun UserCardGalleryContent(
+    userCards: LazyPagingItems<UserCard>,
+    filterType: String,
+    allFilterText: String,
+    isAuthenticated: Boolean,
+    onCardSelected: (UserCard) -> Unit,
+    onNavigateToAuth: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    
+    // Filter function with memoization based on filterType
+    val shouldShowCard = remember(filterType, allFilterText) {
+        { card: UserCard ->
+            if (filterType == allFilterText) {
+                true
+            } else {
                 val cardTypeTitle = try {
                     CardType.valueOf(card.cardType).getTitle(context)
                 } catch (e: IllegalArgumentException) {
-                    card.cardType // Eğer enum değilse direkt string'i kullan
+                    card.cardType
                 }
                 cardTypeTitle == filterType
             }
         }
     }
 
-    // Daha fazla kart yükleme fonksiyonu
-    fun loadMoreCards() {
-        if (!hasMoreCards || isLoadingMore || currentUser == null) return
-        
-        isLoadingMore = true
-        loadCards(
-            userId = currentUser.uid,
-            firestore = firestore,
-            pageSize = pageSize,
-            lastCardId = lastVisibleCard,
-            onSuccess = { newCards, lastId, hasMore ->
-                val updatedCards = cards + newCards
-                cards = updatedCards
-                // Filtreleme işlemi
-                filteredCards = if (filterType == allFilterText) {
-                    updatedCards
-                } else {
-                    updatedCards.filter { card ->
-                        val cardTypeTitle = try {
-                            CardType.valueOf(card.cardType).getTitle(context)
-                        } catch (e: IllegalArgumentException) {
-                            card.cardType
-                        }
-                        cardTypeTitle == filterType
-                    }
-                }
-                lastVisibleCard = lastId
-                hasMoreCards = hasMore
-                isLoadingMore = false
-            },
-            onError = {
-                isLoadingMore = false
-            }
-        )
-    }
-
     Box(
-        modifier = Modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize()
     ) {
-        if (currentUser == null) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+        when {
+            // User not authenticated
+            !isAuthenticated -> {
+                LoginPromptCard(onNavigateToAuth = onNavigateToAuth)
+            }
+            
+            // Loading first page
+            userCards.loadState.refresh is LoadState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.cards),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(48.dp)
-                    )
-                    
-                    Text(
-                        text = context.getString(R.string.login_to_create_cards),
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center
-                    )
-                    
-                    Button(
-                        onClick = { navController.navigate(Screen.Auth.route) },
-                        modifier = Modifier.fillMaxWidth(0.8f)
-                    ) {
-                        Text(context.getString(R.string.login))
-                    }
+                    CircularProgressIndicator()
                 }
             }
-        } else if (isLoading) {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else if (filteredCards.isEmpty()) {
-            // Kullanıcının hiç kartı yoksa veya filtrelenmiş sonuç boşsa uyarı göster
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = if (cards.isEmpty()) 
-                        context.getString(R.string.no_cards_created)
-                    else 
-                        context.getString(R.string.no_cards_of_type),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    textAlign = TextAlign.Center
+            
+            // Error loading
+            userCards.loadState.refresh is LoadState.Error -> {
+                ErrorCard(
+                    onRetry = { userCards.retry() }
                 )
             }
-        } else {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(end = 8.dp)
-            ) {
-                items(filteredCards) { card ->
-                    UserCardItem(card = card, onClick = { selectedCard = card })
-                }
-                
-                // Daha fazla kart varsa yükleme göstergesi
-                if (hasMoreCards) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .width(80.dp)
-                                .height(180.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (isLoadingMore) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(30.dp),
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                // Son öğeye gelince daha fazla yükle
-                                Spacer(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .onAppear {
-                                            loadMoreCards()
-                                        }
-                                )
-                            }
-                        }
-                    }
-                }
+            
+            // Empty state
+            userCards.itemCount == 0 -> {
+                EmptyStateCard()
+            }
+            
+            // Show cards
+            else -> {
+                CardsList(
+                    userCards = userCards,
+                    shouldShowCard = shouldShowCard,
+                    onCardSelected = onCardSelected
+                )
             }
         }
     }
+}
+
+@Composable
+private fun LoginPromptCard(
+    onNavigateToAuth: () -> Unit
+) {
+    val context = LocalContext.current
     
-    
-    // Bottom Sheet for sharing
-    if (showBottomSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showBottomSheet = false },
-            sheetState = bottomSheetState
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Paylaşma bottomsheet içeriği buraya gelecek
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+            Icon(
+                painter = painterResource(id = R.drawable.cards),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(48.dp)
+            )
+            
+            Text(
+                text = context.getString(R.string.login_to_create_cards),
+                style = MaterialTheme.typography.bodyLarge,
+                textAlign = TextAlign.Center
+            )
+            
+            Button(
+                onClick = onNavigateToAuth,
+                modifier = Modifier.fillMaxWidth(0.8f)
             ) {
-                Text(
-                    text = context.getString(R.string.share_card),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = context.getString(R.string.share_coming_soon),
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Text(context.getString(R.string.login))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ErrorCard(
+    onRetry: () -> Unit
+) {
+    val context = LocalContext.current
+    
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = context.getString(R.string.error_loading_cards),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center
+            )
+            Button(onClick = onRetry) {
+                Text(context.getString(R.string.retry))
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyStateCard() {
+    val context = LocalContext.current
+    
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = context.getString(R.string.no_cards_created),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun CardsList(
+    userCards: LazyPagingItems<UserCard>,
+    shouldShowCard: (UserCard) -> Boolean,
+    onCardSelected: (UserCard) -> Unit
+) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(end = 8.dp)
+    ) {
+        // Items with key for better performance
+        items(
+            count = userCards.itemCount,
+            key = { index ->
+                // Use card ID as key for better recomposition performance
+                userCards[index]?.id ?: index
+            }
+        ) { index ->
+            userCards[index]?.let { card ->
+                // Apply filter
+                if (shouldShowCard(card)) {
+                    UserCardItem(
+                        card = card,
+                        onClick = remember { { onCardSelected(card) } }
+                    )
+                }
+            }
+        }
+        
+        // Loading indicator for pagination
+        if (userCards.loadState.append is LoadState.Loading) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .width(80.dp)
+                        .height(180.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(30.dp),
+                        strokeWidth = 2.dp
+                    )
+                }
+            }
+        }
+        
+        // Error indicator for pagination
+        if (userCards.loadState.append is LoadState.Error) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .width(120.dp)
+                        .height(180.dp)
+                        .padding(8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Button(onClick = { userCards.retry() }) {
+                        Text("Retry")
+                    }
+                }
             }
         }
     }

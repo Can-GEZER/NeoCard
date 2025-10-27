@@ -27,7 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.cangzr.neocard.R
 import com.cangzr.neocard.billing.BillingManager
@@ -49,7 +49,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 @Composable
 fun ProfileScreen(navController: NavHostController) {
     val context = LocalContext.current
-    val viewModel: ProfileViewModel = viewModel()
+    val viewModel: ProfileViewModel = hiltViewModel()
     val auth = FirebaseAuth.getInstance()
     val firestore = FirebaseFirestore.getInstance()
     val billingManager = remember { BillingManager.getInstance(context) }

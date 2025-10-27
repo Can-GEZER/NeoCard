@@ -7,8 +7,11 @@ import androidx.lifecycle.ViewModel
 import com.cangzr.neocard.data.model.PromoCode
 import com.cangzr.neocard.data.model.User
 import com.google.firebase.auth.FirebaseUser
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 
-class ProfileViewModel : ViewModel() {
+@HiltViewModel
+class ProfileViewModel @Inject constructor() : ViewModel() {
     // Premium state
     var isPremium by mutableStateOf(false)
         private set

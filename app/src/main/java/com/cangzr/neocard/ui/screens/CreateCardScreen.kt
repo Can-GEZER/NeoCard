@@ -59,7 +59,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.cangzr.neocard.R
 import com.cangzr.neocard.data.CardType
@@ -90,7 +90,7 @@ import com.cangzr.neocard.utils.ValidationUtils
 @Composable
 fun CreateCardScreen(navController: NavController) {
     val context = LocalContext.current
-    val viewModel: CreateCardViewModel = viewModel()
+    val viewModel: CreateCardViewModel = hiltViewModel()
 
     // ViewModel state
     val name by viewModel.name.collectAsState()
@@ -114,23 +114,50 @@ fun CreateCardScreen(navController: NavController) {
     val selectedImageBitmap by viewModel.selectedImageBitmap.collectAsState()
     val isPremium by viewModel.isPremium.collectAsState()
     val showPremiumDialog by viewModel.showPremiumDialog.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
     val isPublic by viewModel.isPublic.collectAsState()
+    
+    // Resource state
+    val uiStateResource by viewModel.uiState.collectAsState()
+    val isLoading = uiStateResource is com.cangzr.neocard.common.Resource.Loading
 
     // Local state
     var selectedText by remember { mutableStateOf<TextType?>(null) }
     var showImageOptions by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
 
+    // Handle UI state changes
+    LaunchedEffect(uiStateResource) {
+        when (val state = uiStateResource) {
+            is com.cangzr.neocard.common.Resource.Success -> {
+                if (state.data.isSaved) {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.card_saved),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    navController.popBackStack()
+                    viewModel.resetState()
+                }
+            }
+            is com.cangzr.neocard.common.Resource.Error -> {
+                Toast.makeText(
+                    context,
+                    state.message ?: context.getString(R.string.error_occurred),
+                    Toast.LENGTH_LONG
+                ).show()
+                viewModel.resetState()
+            }
+            is com.cangzr.neocard.common.Resource.Loading -> {
+                // Loading indicator handled via isLoading
+            }
+        }
+    }
+
     fun saveCard() {
         viewModel.saveCard(
             context = context,
             onSuccess = {
-                Toast.makeText(context, context.getString(R.string.card_saved), Toast.LENGTH_SHORT).show()
-                navController.popBackStack()
-            },
-            onError = { error ->
-                Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+                // Success handled in LaunchedEffect
             }
         )
     }

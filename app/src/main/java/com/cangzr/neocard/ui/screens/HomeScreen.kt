@@ -57,13 +57,20 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.runtime.collectAsState
+import androidx.paging.compose.collectAsLazyPagingItems
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(navController: NavHostController) {
     val context = LocalContext.current
-    val viewModel: HomeViewModel = viewModel()
+    val viewModel: HomeViewModel = hiltViewModel()
+    val uiState by viewModel.uiState.collectAsState()
+    
+    // Collect paging data as LazyPagingItems
+    val userCards = viewModel.userCardsPagingFlow.collectAsLazyPagingItems()
+    val exploreCards = viewModel.exploreCardsPagingFlow.collectAsLazyPagingItems()
 
     var showCardTypeDropdown by remember { mutableStateOf(false) }
     val allFilterText = context.getString(R.string.all)
@@ -80,12 +87,32 @@ fun HomeScreen(navController: NavHostController) {
     // Kart tipleri listesi - "Tümü" ve CardType enum değerleri
     val cardTypes = listOf(allFilterText) + CardType.entries.map { it.getTitle() }
     
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+    // Check if user is authenticated
+    if (!viewModel.isUserAuthenticated()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = context.getString(R.string.please_login),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+        return
+    }
+    
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
 
             // Kartvizit Galerisi Başlık
             Row(
@@ -137,18 +164,17 @@ fun HomeScreen(navController: NavHostController) {
             }
 
             // Kartvizit Galerisi
-            Box(
-                modifier = Modifier.height(200.dp)
-            ) {
-                UserCardGallery(
-                    navController = navController,
-                    filterType = selectedCardType,
-                    onCardSelected = { card ->
+            UserCardGallery(
+                navController = navController,
+                filterType = selectedCardType,
+                onCardSelected = remember {
+                    { card ->
                         dialogCard = card
                         showCardDialog = true
                     }
-                )
-            }
+                },
+                modifier = Modifier.height(200.dp)
+            )
         
         // Keşfet Kartları - Ayrı scrollable container
                 ExploreCardsSection(navController = navController)
@@ -188,16 +214,16 @@ fun HomeScreen(navController: NavHostController) {
         }
     }
     
-    // Bottom Sheet for sharing
-    if (showBottomSheet && dialogCard != null) {
-        ModalBottomSheet(
-            onDismissRequest = { showBottomSheet = false },
-            sheetState = bottomSheetState
-        ) {
-            ShareBottomSheet(
-                card = dialogCard!!,
-                onDismiss = { showBottomSheet = false }
-            )
+            // Bottom Sheet for sharing
+            if (showBottomSheet && dialogCard != null) {
+                ModalBottomSheet(
+                    onDismissRequest = { showBottomSheet = false },
+                    sheetState = bottomSheetState
+                ) {
+                    ShareBottomSheet(
+                        card = dialogCard!!,
+                        onDismiss = { showBottomSheet = false }
+                    )
+                }
+            }
         }
-    }
-}

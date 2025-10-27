@@ -55,8 +55,7 @@ npm-debug.log
 proguard/
 mapping.txt
 
-# Gradle cache
-/gradle/wrapper/
+# Gradle cache (but keep wrapper for CI)
 /gradle/caches/
 
 # VS Code veya diğer editörlerin dosyaları
@@ -78,9 +77,6 @@ caches/
 caches/*/
 transforms/
 outputs/
-wrapper/
-wrapper/dists/
-.gradle/
 
 # Build klasörlerini hariç tut
 **/build/
@@ -95,6 +91,7 @@ local.properties
 *.class
 *.kotlin_module
 *.jar
+!gradle-wrapper.jar
 *.war
 *.nar
 *.ear

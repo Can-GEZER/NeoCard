@@ -1,172 +1,111 @@
 package com.cangzr.neocard.ui.screens.home.viewmodels
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.cangzr.neocard.data.model.UserCard
-import com.cangzr.neocard.ui.screens.home.utils.loadCards
-import com.cangzr.neocard.ui.screens.home.utils.loadExploreCards
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.launch
+import com.cangzr.neocard.data.paging.CardPagingSource
+import com.cangzr.neocard.data.paging.ExploreCardPagingSource
+import com.cangzr.neocard.data.repository.AuthRepository
+import com.cangzr.neocard.data.repository.CardRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.emptyFlow
+import javax.inject.Inject
 
+/**
+ * UI State for filter and search options
+ */
 data class HomeUiState(
-    val cards: List<UserCard> = emptyList(),
-    val exploreCards: List<UserCard> = emptyList(),
-    val isLoading: Boolean = true,
-    val isExploreLoading: Boolean = true,
     val selectedCardType: String = "Tümü",
-    val searchQuery: String = "",
-    val lastCardId: String? = null,
-    val lastExploreCardId: String? = null,
-    val hasMoreCards: Boolean = true,
-    val hasMoreExploreCards: Boolean = true,
-    val isLoadingMore: Boolean = false,
-    val isLoadingMoreExplore: Boolean = false
+    val searchQuery: String = ""
 )
 
-class HomeViewModel : ViewModel() {
-    private val auth = FirebaseAuth.getInstance()
-    private val firestore = FirebaseFirestore.getInstance()
+@HiltViewModel
+class HomeViewModel @Inject constructor(
+    private val authRepository: AuthRepository,
+    private val cardRepository: CardRepository
+) : ViewModel() {
     
-    var uiState by mutableStateOf(HomeUiState())
-        private set
+    private val _uiState = MutableStateFlow(HomeUiState())
+    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
     
     private val pageSize = 10
     
-    init {
-        loadInitialData()
-    }
-    
-    private fun loadInitialData() {
-        val currentUser = auth.currentUser
+    /**
+     * PagingData flow for user's cards
+     * Uses Paging3 to handle pagination automatically
+     */
+    val userCardsPagingFlow: Flow<PagingData<UserCard>> = run {
+        val currentUser = authRepository.getCurrentUser()
         if (currentUser != null) {
-            loadUserCards()
-            loadExploreCards()
+            Pager(
+                config = PagingConfig(
+                    pageSize = pageSize,
+                    enablePlaceholders = false,
+                    initialLoadSize = pageSize
+                ),
+                pagingSourceFactory = {
+                    CardPagingSource(
+                        userId = currentUser.uid,
+                        cardRepository = cardRepository
+                    )
+                }
+            ).flow.cachedIn(viewModelScope)
         } else {
-            uiState = uiState.copy(isLoading = false, isExploreLoading = false)
+            emptyFlow()
         }
     }
     
-    fun loadUserCards() {
-        val currentUser = auth.currentUser ?: return
-        
-        viewModelScope.launch {
-            loadCards(
-                userId = currentUser.uid,
-                firestore = firestore,
-                pageSize = pageSize,
-                lastCardId = null,
-                onSuccess = { newCards, lastId, hasMore ->
-                    uiState = uiState.copy(
-                        cards = newCards,
-                        lastCardId = lastId,
-                        hasMoreCards = hasMore,
-                        isLoading = false
+    /**
+     * PagingData flow for explore cards
+     * Uses Paging3 to handle pagination automatically
+     */
+    val exploreCardsPagingFlow: Flow<PagingData<UserCard>> = run {
+        val currentUser = authRepository.getCurrentUser()
+        if (currentUser != null) {
+            Pager(
+                config = PagingConfig(
+                    pageSize = pageSize,
+                    enablePlaceholders = false,
+                    initialLoadSize = pageSize
+                ),
+                pagingSourceFactory = {
+                    ExploreCardPagingSource(
+                        currentUserId = currentUser.uid,
+                        cardRepository = cardRepository
                     )
-                },
-                onError = {
-                    uiState = uiState.copy(isLoading = false)
                 }
-            )
+            ).flow.cachedIn(viewModelScope)
+        } else {
+            emptyFlow()
         }
     }
     
-    fun loadExploreCards() {
-        val currentUser = auth.currentUser ?: return
-        
-        viewModelScope.launch {
-            loadExploreCards(
-                firestore = firestore,
-                currentUserId = currentUser.uid,
-                pageSize = pageSize,
-                lastCardId = null,
-                onSuccess = { newCards, lastId, hasMore ->
-                    uiState = uiState.copy(
-                        exploreCards = newCards,
-                        lastExploreCardId = lastId,
-                        hasMoreExploreCards = hasMore,
-                        isExploreLoading = false
-                    )
-                },
-                onError = {
-                    uiState = uiState.copy(isExploreLoading = false)
-                }
-            )
-        }
-    }
-    
-    fun loadMoreUserCards() {
-        if (!uiState.hasMoreCards || uiState.isLoadingMore) return
-        
-        val currentUser = auth.currentUser ?: return
-        
-        uiState = uiState.copy(isLoadingMore = true)
-        
-        viewModelScope.launch {
-            loadCards(
-                userId = currentUser.uid,
-                firestore = firestore,
-                pageSize = pageSize,
-                lastCardId = uiState.lastCardId,
-                onSuccess = { newCards, lastId, hasMore ->
-                    uiState = uiState.copy(
-                        cards = uiState.cards + newCards,
-                        lastCardId = lastId,
-                        hasMoreCards = hasMore,
-                        isLoadingMore = false
-                    )
-                },
-                onError = {
-                    uiState = uiState.copy(isLoadingMore = false)
-                }
-            )
-        }
-    }
-    
-    fun loadMoreExploreCards() {
-        if (!uiState.hasMoreExploreCards || uiState.isLoadingMoreExplore) return
-        
-        val currentUser = auth.currentUser ?: return
-        
-        uiState = uiState.copy(isLoadingMoreExplore = true)
-        
-        viewModelScope.launch {
-            loadExploreCards(
-                firestore = firestore,
-                currentUserId = currentUser.uid,
-                pageSize = pageSize,
-                lastCardId = uiState.lastExploreCardId,
-                onSuccess = { newCards, lastId, hasMore ->
-                    uiState = uiState.copy(
-                        exploreCards = uiState.exploreCards + newCards,
-                        lastExploreCardId = lastId,
-                        hasMoreExploreCards = hasMore,
-                        isLoadingMoreExplore = false
-                    )
-                },
-                onError = {
-                    uiState = uiState.copy(isLoadingMoreExplore = false)
-                }
-            )
-        }
-    }
-    
+    /**
+     * Update selected card type filter
+     */
     fun updateSelectedCardType(cardType: String) {
-        uiState = uiState.copy(selectedCardType = cardType)
+        _uiState.value = _uiState.value.copy(selectedCardType = cardType)
     }
     
+    /**
+     * Update search query
+     */
     fun updateSearchQuery(query: String) {
-        uiState = uiState.copy(searchQuery = query)
+        _uiState.value = _uiState.value.copy(searchQuery = query)
     }
     
-    fun getFilteredCards(): List<UserCard> {
-        return if (uiState.selectedCardType == "Tümü") {
-            uiState.cards
-        } else {
-            uiState.cards.filter { it.cardType == uiState.selectedCardType }
-        }
+    /**
+     * Check if user is authenticated
+     */
+    fun isUserAuthenticated(): Boolean {
+        return authRepository.getCurrentUser() != null
     }
 }

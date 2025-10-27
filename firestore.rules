@@ -1,0 +1,250 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ====================================
+    // Helper Functions
+    // ====================================
+    
+    /**
+     * Check if user is authenticated
+     */
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    /**
+     * Check if the authenticated user owns the resource
+     */
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+    
+    /**
+     * Validate email format
+     */
+    function isValidEmail(email) {
+      return email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$');
+    }
+    
+    /**
+     * Validate string length
+     */
+    function isValidLength(text, maxLength) {
+      return text.size() <= maxLength;
+    }
+    
+    /**
+     * Check if the request is from server (Cloud Functions)
+     * Server requests have admin privileges
+     */
+    function isServer() {
+      return request.auth.token.admin == true;
+    }
+    
+    // ====================================
+    // User Documents Rules
+    // ====================================
+    
+    /**
+     * /users/{uid}
+     * Read/Write: Only by the authenticated user who owns the document
+     */
+    match /users/{uid} {
+      // Allow read if user is authenticated and owns this document
+      allow read: if isOwner(uid);
+      
+      // Allow create/update if user is authenticated and owns this document
+      allow create, update: if isOwner(uid) 
+        && validateUserData(request.resource.data);
+      
+      // Allow delete only by owner
+      allow delete: if isOwner(uid);
+      
+      /**
+       * Validate user data
+       */
+      function validateUserData(data) {
+        return data.keys().hasAll(['id', 'email', 'displayName'])
+          && (data.email == null || isValidEmail(data.email))
+          && (data.displayName == null || isValidLength(data.displayName, 100));
+      }
+      
+      // ====================================
+      // User Cards Subcollection Rules
+      // ====================================
+      
+      /**
+       * /users/{uid}/cards/{cardId}
+       * Read/Write: Only by the authenticated user who owns the card
+       */
+      match /cards/{cardId} {
+        // Allow read if user owns the parent document
+        allow read: if isOwner(uid);
+        
+        // Allow create/update if user owns the parent document and data is valid
+        allow create, update: if isOwner(uid) 
+          && validateCardData(request.resource.data);
+        
+        // Allow delete only by owner
+        allow delete: if isOwner(uid);
+        
+        /**
+         * Validate card data
+         */
+        function validateCardData(data) {
+          return data.keys().hasAll(['name', 'surname', 'email'])
+            && isValidLength(data.name, 100)
+            && isValidLength(data.surname, 100)
+            && (data.email == null || data.email == '' || isValidEmail(data.email))
+            && (data.company == null || isValidLength(data.company, 200))
+            && (data.title == null || isValidLength(data.title, 200))
+            && (data.phone == null || isValidLength(data.phone, 20))
+            && (data.website == null || isValidLength(data.website, 500))
+            && (data.linkedin == null || isValidLength(data.linkedin, 100))
+            && (data.instagram == null || isValidLength(data.instagram, 100))
+            && (data.twitter == null || isValidLength(data.twitter, 100))
+            && (data.facebook == null || isValidLength(data.facebook, 100))
+            && (data.github == null || isValidLength(data.github, 100))
+            && (data.bio == null || isValidLength(data.bio, 500));
+        }
+      }
+      
+      // ====================================
+      // User Notifications Subcollection Rules
+      // ====================================
+      
+      /**
+       * /users/{uid}/notifications/{notificationId}
+       * Read/Write: Only by the authenticated user who owns the notification
+       */
+      match /notifications/{notificationId} {
+        allow read: if isOwner(uid);
+        allow write: if isOwner(uid);
+      }
+    }
+    
+    // ====================================
+    // Public Cards Collection Rules
+    // ====================================
+    
+    /**
+     * /public_cards/{cardId}
+     * Read: Anyone can read if card isPublic == true
+     * Write: Only by card owner or server
+     */
+    match /public_cards/{cardId} {
+      // Allow read if card is public
+      allow read: if resource.data.isPublic == true;
+      
+      // Allow create/update if user owns the card or is server
+      allow create, update: if isAuthenticated() 
+        && (request.auth.uid == request.resource.data.userId || isServer())
+        && request.resource.data.keys().hasAll(['id', 'userId', 'isPublic']);
+      
+      // Allow delete only by card owner
+      allow delete: if isAuthenticated() 
+        && request.auth.uid == resource.data.userId;
+    }
+    
+    // ====================================
+    // Card Statistics Collection Rules
+    // ====================================
+    
+    /**
+     * /card_statistics/{cardId}
+     * Read: Only by card owner
+     * Write: Only by server (Cloud Functions)
+     */
+    match /card_statistics/{cardId} {
+      // Allow read if user owns the card
+      allow read: if isAuthenticated() 
+        && request.auth.uid == resource.data.cardOwnerId;
+      
+      // Allow write only by server/Cloud Functions
+      allow create, update: if isServer();
+      
+      // Allow delete only by card owner or server
+      allow delete: if isServer() 
+        || (isAuthenticated() && request.auth.uid == resource.data.cardOwnerId);
+    }
+    
+    // ====================================
+    // Card Analytics Events Collection Rules
+    // ====================================
+    
+    /**
+     * /card_analytics/{eventId}
+     * Read: Only by card owner
+     * Write: Anyone (for tracking views, clicks, etc.)
+     */
+    match /card_analytics/{eventId} {
+      // Allow read only by card owner
+      allow read: if isAuthenticated() 
+        && request.auth.uid == resource.data.cardOwnerId;
+      
+      // Allow create for tracking events (anonymous or authenticated)
+      allow create: if request.resource.data.keys().hasAll(['cardId', 'cardOwnerId', 'eventType', 'timestamp'])
+        && request.resource.data.timestamp == request.time;
+      
+      // Allow update/delete only by server
+      allow update, delete: if isServer();
+    }
+    
+    // ====================================
+    // Connection Requests Collection Rules
+    // ====================================
+    
+    /**
+     * /connection_requests/{requestId}
+     * Read/Write: By sender or receiver
+     */
+    match /connection_requests/{requestId} {
+      // Allow read if user is sender or receiver
+      allow read: if isAuthenticated() 
+        && (request.auth.uid == resource.data.fromUserId 
+          || request.auth.uid == resource.data.toUserId);
+      
+      // Allow create if user is the sender
+      allow create: if isAuthenticated() 
+        && request.auth.uid == request.resource.data.fromUserId
+        && request.resource.data.keys().hasAll(['fromUserId', 'toUserId', 'cardId', 'status', 'createdAt'])
+        && request.resource.data.status == 'pending';
+      
+      // Allow update if user is receiver (to accept/reject)
+      allow update: if isAuthenticated() 
+        && request.auth.uid == resource.data.toUserId
+        && request.resource.data.status in ['accepted', 'rejected'];
+      
+      // Allow delete by sender or receiver
+      allow delete: if isAuthenticated() 
+        && (request.auth.uid == resource.data.fromUserId 
+          || request.auth.uid == resource.data.toUserId);
+    }
+    
+    // ====================================
+    // Promo Codes Collection Rules
+    // ====================================
+    
+    /**
+     * /promo_codes/{code}
+     * Read: Anyone authenticated
+     * Write: Only by server/admin
+     */
+    match /promo_codes/{code} {
+      allow read: if isAuthenticated();
+      allow write: if isServer();
+    }
+    
+    // ====================================
+    // Deny all other access
+    // ====================================
+    
+    // Default deny for all other paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

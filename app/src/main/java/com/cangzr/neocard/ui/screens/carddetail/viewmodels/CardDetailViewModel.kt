@@ -10,14 +10,17 @@ import com.cangzr.neocard.data.model.UserCard
 import com.cangzr.neocard.ui.screens.carddetail.utils.ValidationUtils
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class CardDetailViewModel : ViewModel() {
-    
-    private val auth = FirebaseAuth.getInstance()
-    private val firestore = FirebaseFirestore.getInstance()
+@HiltViewModel
+class CardDetailViewModel @Inject constructor(
+    private val auth: FirebaseAuth,
+    private val firestore: FirebaseFirestore
+) : ViewModel() {
     
     // State variables
     private val _userCard = MutableStateFlow<UserCard?>(null)

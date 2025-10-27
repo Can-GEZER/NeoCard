@@ -22,11 +22,13 @@ import com.cangzr.neocard.notifications.NotificationManager
 import com.google.firebase.auth.FirebaseAuth
 import android.util.Log
 import androidx.lifecycle.lifecycleScope
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import androidx.work.*
 import java.util.concurrent.TimeUnit
 import com.cangzr.neocard.notifications.NotificationSyncWorker
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun attachBaseContext(newBase: Context) {
         // Apply language settings for older Android versions

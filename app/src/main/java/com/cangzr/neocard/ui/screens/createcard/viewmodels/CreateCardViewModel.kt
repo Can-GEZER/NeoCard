@@ -6,18 +6,22 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cangzr.neocard.R
+import com.cangzr.neocard.common.Resource
 import com.cangzr.neocard.data.CardType
+import com.cangzr.neocard.data.model.TextStyleDTO
+import com.cangzr.neocard.data.model.UserCard
+import com.cangzr.neocard.data.repository.AuthRepository
+import com.cangzr.neocard.domain.usecase.GetUserCardsUseCase
+import com.cangzr.neocard.domain.usecase.SaveCardUseCase
 import com.cangzr.neocard.ui.screens.createcard.utils.CardCreationUtils
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Dispatchers
 import androidx.compose.ui.graphics.toArgb
+import javax.inject.Inject
 
 enum class TextType {
     NAME_SURNAME, TITLE, COMPANY, EMAIL, PHONE
@@ -35,10 +39,21 @@ enum class BackgroundType {
     SOLID, GRADIENT
 }
 
-class CreateCardViewModel : ViewModel() {
+data class CreateCardUiState(
+    val isSaved: Boolean = false,
+    val errorMessage: String? = null
+)
+
+@HiltViewModel
+class CreateCardViewModel @Inject constructor(
+    private val authRepository: AuthRepository,
+    private val saveCardUseCase: SaveCardUseCase,
+    private val getUserCardsUseCase: GetUserCardsUseCase
+) : ViewModel() {
     
-    private val auth = FirebaseAuth.getInstance()
-    private val firestore = FirebaseFirestore.getInstance()
+    // UI State for save operation
+    private val _uiState = MutableStateFlow<Resource<CreateCardUiState>>(Resource.Success(CreateCardUiState()))
+    val uiState: StateFlow<Resource<CreateCardUiState>> = _uiState
     
     // Form state
     private val _name = MutableStateFlow("")
@@ -252,128 +267,119 @@ class CreateCardViewModel : ViewModel() {
         _isPublic.value = true
     }
     
-    fun saveCard(context: Context, onSuccess: () -> Unit, onError: (String) -> Unit) {
-        val currentUser = auth.currentUser
+    fun saveCard(context: Context, onSuccess: () -> Unit) {
+        val currentUser = authRepository.getCurrentUser()
         if (currentUser == null) {
-            onError(context.getString(R.string.please_login))
+            _uiState.value = Resource.Error(
+                exception = Exception("User not logged in"),
+                message = context.getString(R.string.please_login)
+            )
             return
         }
         
-        _isLoading.value = true
-        val userDocRef = firestore.collection("users").document(currentUser.uid)
-        
         viewModelScope.launch {
+            _uiState.value = Resource.Loading
+            
             try {
                 val isPremiumUser = _isPremium.value
                 
+                    // Premium kontrolü
                 if (!isPremiumUser) {
-                    val cardCount = userDocRef.collection("cards").get().await().size()
-                    if (cardCount >= 1) {
-                        withContext(Dispatchers.Main) {
-                            onError(context.getString(R.string.premium_card_limit))
-                            _isLoading.value = false
+                        when (val result = getUserCardsUseCase(
+                            userId = currentUser.uid,
+                            pageSize = 1,
+                            lastCardId = null
+                        )) {
+                            is Resource.Success -> {
+                                val (cards, _, _) = result.data
+                                if (cards.isNotEmpty()) {
+                                    _uiState.value = Resource.Error(
+                                        exception = Exception("Premium required"),
+                                        message = context.getString(R.string.premium_card_limit)
+                                    )
+                                    return@launch
+                                }
+                            }
+                            is Resource.Error -> {
+                                _uiState.value = Resource.Error(
+                                    exception = result.exception,
+                                    message = context.getString(R.string.error_occurred, result.message)
+                                )
+                                return@launch
+                            }
+                            is Resource.Loading -> {
+                                // Continue
+                            }
                         }
-                        return@launch
                     }
-                }
                 
-                val cardData = hashMapOf(
-                    "name" to _name.value,
-                    "surname" to _surname.value,
-                    "phone" to _phone.value,
-                    "email" to _email.value,
-                    "company" to _company.value,
-                    "title" to _title.value,
-                    "website" to _website.value,
-                    "linkedin" to _linkedin.value,
-                    "instagram" to _instagram.value,
-                    "twitter" to _twitter.value,
-                    "facebook" to _facebook.value,
-                    "github" to _github.value,
-                    "backgroundType" to _backgroundType.value.name,
-                    "backgroundColor" to _backgroundColor.value.toArgb().toHexColor(),
-                    "selectedGradient" to _selectedGradient.value.first,
-                    "profileImageUrl" to "",
-                    "cardType" to (_selectedCardType.value?.name ?: "Genel"),
-                    "textStyles" to _textStyles.value.mapKeys { it.key.name }.mapValues { (_, style) ->
-                        mapOf(
-                            "isBold" to style.isBold,
-                            "isItalic" to style.isItalic,
-                            "isUnderlined" to style.isUnderlined,
-                            "fontSize" to style.fontSize,
-                            "color" to style.color.toArgb().toHexColor()
+                // UI state'den UserCard oluştur
+                val card = UserCard(
+                    id = "",
+                    name = _name.value,
+                    surname = _surname.value,
+                    phone = _phone.value,
+                    email = _email.value,
+                    company = _company.value,
+                    title = _title.value,
+                    website = _website.value,
+                    linkedin = _linkedin.value,
+                    instagram = _instagram.value,
+                    twitter = _twitter.value,
+                    facebook = _facebook.value,
+                    github = _github.value,
+                    bio = "",
+                    cv = "",
+                    backgroundType = _backgroundType.value.name,
+                    backgroundColor = _backgroundColor.value.toArgb().toHexColor(),
+                    selectedGradient = _selectedGradient.value.first,
+                    profileImageUrl = "",
+                    cardType = _selectedCardType.value?.name ?: "Genel",
+                    textStyles = _textStyles.value.mapKeys { it.key.name }.mapValues { (_, style) ->
+                        TextStyleDTO(
+                            isBold = style.isBold,
+                            isItalic = style.isItalic,
+                            isUnderlined = style.isUnderlined,
+                            fontSize = style.fontSize,
+                            color = style.color.toArgb().toHexColor()
                         )
                     },
-                    "isPublic" to _isPublic.value
+                    isPublic = _isPublic.value
                 )
                 
-                // Profil fotoğrafı varsa yükle
-                if (_profileImageUri.value != null) {
-                    try {
-                        val bitmap = CardCreationUtils.uriToBitmap(_profileImageUri.value!!, context)
-                        if (bitmap != null) {
-                            val maxSize = 800
-                            val scaledBitmap = if (bitmap.width > maxSize || bitmap.height > maxSize) {
-                                val ratio = minOf(maxSize.toFloat() / bitmap.width, maxSize.toFloat() / bitmap.height)
-                                val width = (bitmap.width * ratio).toInt()
-                                val height = (bitmap.height * ratio).toInt()
-                                Bitmap.createScaledBitmap(bitmap, width, height, true)
-                            } else {
-                                bitmap
+                        // UseCase ile kartı kaydet
+                        when (val result = saveCardUseCase(
+                            userId = currentUser.uid,
+                            card = card,
+                            imageUri = _profileImageUri.value
+                        )) {
+                            is Resource.Success -> {
+                                clearForm()
+                                _uiState.value = Resource.Success(CreateCardUiState(isSaved = true))
+                                onSuccess()
                             }
-                            
-                            val baos = java.io.ByteArrayOutputStream()
-                            scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos)
-                            val imageData = baos.toByteArray()
-                            
-                            val filename = "profile_${currentUser.uid}_${System.currentTimeMillis()}.jpg"
-                            val storageRef = FirebaseStorage.getInstance().reference
-                                .child("user_uploads/${currentUser.uid}/$filename")
-                            
-                            val uploadTask = storageRef.putBytes(imageData).await()
-                            val profileImageUrl = storageRef.downloadUrl.await().toString()
-                            
-                            cardData["profileImageUrl"] = profileImageUrl
-                        }
-                    } catch (e: Exception) {
-                        withContext(Dispatchers.Main) {
-                            _isLoading.value = false
-                            onError(context.getString(R.string.image_upload_error, e.localizedMessage ?: context.getString(R.string.unknown_error)))
-                        }
-                        return@launch
-                    }
-                }
-                
-                // Kartı kaydet
-                val cardDocRef = userDocRef.collection("cards").add(cardData).await()
-                
-                // Eğer kart herkese açık olarak işaretlendiyse, public_cards koleksiyonuna da ekle
-                if (_isPublic.value) {
-                    val publicCardData = cardData.toMutableMap().apply {
-                        put("id", cardDocRef.id)
-                        put("userId", currentUser.uid)
-                        put("isPublic", true)
-                    }
-                    
-                    firestore.collection("public_cards")
-                        .document(cardDocRef.id)
-                        .set(publicCardData)
-                        .await()
-                }
-                
-                withContext(Dispatchers.Main) {
-                    clearForm()
-                    _isLoading.value = false
-                    onSuccess()
+                            is Resource.Error -> {
+                                _uiState.value = Resource.Error(
+                                    exception = result.exception,
+                                    message = context.getString(R.string.error_occurred, result.message)
+                                )
+                            }
+                            is Resource.Loading -> {
+                                // Loading already handled
+                            }
                 }
                 
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    onError(context.getString(R.string.error_occurred, e.localizedMessage))
-                    _isLoading.value = false
-                }
+                _uiState.value = Resource.Error(
+                    exception = e,
+                    message = context.getString(R.string.error_occurred, e.localizedMessage)
+                )
             }
         }
+    }
+    
+    fun resetState() {
+        _uiState.value = Resource.Success(CreateCardUiState())
     }
     
     private fun Int.toHexColor(): String {

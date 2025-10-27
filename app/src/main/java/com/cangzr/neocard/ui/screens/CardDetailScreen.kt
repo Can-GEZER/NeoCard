@@ -57,7 +57,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.cangzr.neocard.R
@@ -89,7 +89,7 @@ fun CardDetailScreen(
     val context = LocalContext.current
     val billingManager = remember { BillingManager.getInstance(context) }
     val isPremium by billingManager.isPremium.collectAsState()
-    val viewModel: CardDetailViewModel = viewModel()
+    val viewModel: CardDetailViewModel = hiltViewModel()
 
     // ViewModel state
     val userCard by viewModel.userCard.collectAsState()
