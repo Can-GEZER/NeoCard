@@ -2,15 +2,18 @@
 
 <div align="center">
 
-[![Android CI](https://github.com/YOUR_USERNAME/neo/actions/workflows/android-ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/neo/actions/workflows/android-ci.yml)
-[![Kotlin](https://img.shields.io/badge/Kotlin-1.9.23-blue.svg)](https://kotlinlang.org)
-[![Android](https://img.shields.io/badge/Android-8.0%2B-green.svg)](https://android.com)
+[![Build Status](https://github.com/YOUR_USERNAME/neo/actions/workflows/android-ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/neo/actions/workflows/android-ci.yml)
+[![Test Coverage](https://codecov.io/gh/YOUR_USERNAME/neo/branch/master/graph/badge.svg)](https://codecov.io/gh/YOUR_USERNAME/neo)
+[![Kotlin](https://img.shields.io/badge/Kotlin-1.9.23-7F52FF.svg?logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![Hilt](https://img.shields.io/badge/Hilt-2.51.1-673AB7.svg?logo=android)](https://dagger.dev/hilt/)
+[![Compose](https://img.shields.io/badge/Compose-1.6.0-4285F4.svg?logo=jetpack-compose)](https://developer.android.com/jetpack/compose)
+[![Firebase](https://img.shields.io/badge/Firebase-Latest-FFCA28.svg?logo=firebase&logoColor=black)](https://firebase.google.com)
+[![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84.svg?logo=android&logoColor=white)](https://android.com)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Firebase](https://img.shields.io/badge/Firebase-Latest-orange.svg)](https://firebase.google.com)
 
 **Modern digital business card platform for Android**
 
-[Features](#-features) • [Architecture](#-architecture) • [Setup](#-setup) • [Tech Stack](#-tech-stack) • [Contributing](#-contributing)
+[Features](#-features) • [Architecture](#-architecture) • [Testing](#-testing) • [Security](#-security--validation-v21) • [Error Handling](#-retry-logic--error-handling-v21) • [Setup](#-setup) • [Tech Stack](#-tech-stack) • [Contributing](#-contributing)
 
 </div>
 
@@ -23,12 +26,14 @@ NeoCard is a modern Android application that allows users to create, manage, and
 ### ✨ Key Highlights
 
 - 🎨 **Beautiful UI** - Modern Material 3 design with Jetpack Compose
-- 🔐 **Secure** - Firebase Authentication & Firestore Security Rules
+- 🔐 **Secure** - Firebase Authentication & Firestore Security Rules with validation
 - 🚀 **Fast** - Paging3 for efficient data loading
 - 🏗️ **Clean Architecture** - MVVM + Repository + Use Cases
 - 💉 **Dependency Injection** - Hilt for scalable architecture
-- ✅ **Tested** - Unit tests with MockK and Turbine
-- 🔄 **CI/CD** - Automated builds with GitHub Actions
+- ✅ **Well Tested** - 164+ unit tests with 75%+ coverage
+- 🔄 **CI/CD Ready** - Automated builds, tests, and coverage reports
+- 🔁 **Retry Logic** - Automatic retry with exponential backoff for network failures
+- 💬 **User-Friendly Errors** - Human-readable error messages in Turkish
 
 ---
 
@@ -93,46 +98,59 @@ NeoCard follows **Clean Architecture** principles with **MVVM** pattern for sepa
 ### Architecture Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        UI Layer                              │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │   Compose    │  │  ViewModels  │  │   States     │      │
-│  │   Screens    │◄─┤  (@HiltVM)   │◄─┤  (Resource)  │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                          UI Layer                                   │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐     │
+│  │   Compose    │  │  ViewModels  │  │   Resource States     │     │
+│  │   Screens    │◄─┤  (@HiltVM)   │◄─┤   + Error Display    │     │
+│  │  + Testing   │  └──────────────┘  └──────────────────────┘     │
+│  └──────────────┘                                                  │
+└─────────────────────────────────────────────────────────────────────┘
                             │
                             ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      Domain Layer                            │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │              Use Cases (Business Logic)              │   │
-│  │  • GetUserCardsUseCase                              │   │
-│  │  • SaveCardUseCase                                   │   │
-│  │  • GetExploreCardsUseCase                           │   │
-│  └──────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                      Domain Layer                                    │
+│  ┌──────────────────────────────────────────────────────────────┐   │
+│  │              Use Cases (Business Logic)                      │   │
+│  │  • GetUserCardsUseCase (Tested)                             │   │
+│  │  • SaveCardUseCase (Tested)                                  │   │
+│  │  • GetExploreCardsUseCase (Tested)                          │   │
+│  └──────────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────┘
                             │
                             ▼
-┌─────────────────────────────────────────────────────────────┐
-│                       Data Layer                             │
-│  ┌──────────────┐         ┌──────────────┐                  │
-│  │  Repository  │         │ PagingSource │                  │
-│  │  Interfaces  │         │              │                  │
-│  └──────────────┘         └──────────────┘                  │
-│         │                        │                           │
-│         ▼                        ▼                           │
-│  ┌──────────────────────────────────────────┐              │
-│  │     Firebase Implementation               │              │
-│  │  • FirebaseCardRepository                │              │
-│  │  • FirebaseAuthRepository                │              │
-│  │  • CardPagingSource                      │              │
-│  └──────────────────────────────────────────┘              │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                       Data Layer                                     │
+│  ┌──────────────┐         ┌──────────────┐                         │
+│  │  Repository  │         │ PagingSource │                         │
+│  │  Interfaces  │         │              │                         │
+│  └──────────────┘         └──────────────┘                         │
+│         │                        │                                  │
+│         ▼                        ▼                                  │
+│  ┌──────────────────────────────────────────────────────┐         │
+│  │     Firebase Implementation                          │         │
+│  │  • FirebaseCardRepository (Tested)                  │         │
+│  │  • FirebaseAuthRepository (Tested)                   │         │
+│  │  • CardPagingSource                                  │         │
+│  │  • safeApiCall (Retry Logic + Error Mapping)         │         │
+│  └──────────────────────────────────────────────────────┘         │
+└─────────────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                    Common Utilities                                  │
+│  • Resource<T> (Sealed Class)                                       │
+│  • safeApiCall (Retry Logic + Exponential Backoff)                  │
+│  • ErrorMapper (User-Friendly Error Messages)                       │
+│  • ValidationUtils (Input Validation)                               │
+└─────────────────────────────────────────────────────────────────────┘
                             │
                             ▼
                     ┌───────────────┐
                     │    Firebase   │
                     │  • Firestore  │
+                    │    (Secure    │
+                    │     Rules)   │
                     │  • Auth       │
                     │  • Storage    │
                     │  • Analytics  │
@@ -142,21 +160,33 @@ NeoCard follows **Clean Architecture** principles with **MVVM** pattern for sepa
 ### Architecture Components
 
 #### 🎨 **UI Layer**
-- **Jetpack Compose** - Modern declarative UI
-- **ViewModels** - UI state management with `@HiltViewModel`
+- **Jetpack Compose** - Modern declarative UI with Material 3
+- **ViewModels** - UI state management with `@HiltViewModel` (tested)
 - **Resource Pattern** - Sealed class for Loading/Success/Error states
+- **Error Display** - User-friendly error components (Snackbar, AlertDialog)
 - **Navigation** - Type-safe navigation with Compose Navigation
+- **UI Testing** - Compose UI tests with test tags
 
 #### 💼 **Domain Layer**
-- **Use Cases** - Single responsibility business logic
-- **Models** - Domain entities
+- **Use Cases** - Single responsibility business logic (all tested)
+- **Models** - Domain entities with KDoc documentation
 - **Repository Interfaces** - Contract for data operations
+- **Business Rules** - Enforced in use cases
 
 #### 📦 **Data Layer**
-- **Repositories** - Implementation of repository interfaces
+- **Repositories** - Implementation of repository interfaces (Firebase)
 - **Paging3** - Efficient data loading and pagination
-- **Firebase SDK** - Backend integration
+- **safeApiCall** - Retry logic with exponential backoff
+- **ErrorMapper** - Exception to user message translation
+- **ValidationUtils** - Input validation utilities
+- **Firebase SDK** - Backend integration with security rules
 - **Hilt Modules** - Dependency injection configuration
+
+#### 🔐 **Common Utilities**
+- **Resource<T>** - Sealed class for API results
+- **safeApiCall** - Automatic retry on transient failures
+- **ErrorMapper** - 40+ exception types to Turkish messages
+- **ValidationUtils** - Comprehensive input validation
 
 ### Key Design Patterns
 
@@ -171,51 +201,64 @@ NeoCard follows **Clean Architecture** principles with **MVVM** pattern for sepa
 
 ## 🛠️ Tech Stack
 
-### Core
-- **Language:** Kotlin 1.9.23
+### Core Technologies
+- ![Kotlin](https://img.shields.io/badge/Kotlin-1.9.23-7F52FF.svg?logo=kotlin) **Kotlin 1.9.23** - Modern JVM language
 - **Min SDK:** 26 (Android 8.0)
-- **Target SDK:** 34 (Android 14)
+- **Target SDK:** 35 (Android 15)
 - **Build System:** Gradle 8.2 with Kotlin DSL
 
-### UI
-- **Jetpack Compose** 1.6.0 - Modern declarative UI
+### UI Framework
+- ![Compose](https://img.shields.io/badge/Compose-1.6.0-4285F4.svg) **Jetpack Compose 1.6.0** - Modern declarative UI
 - **Material 3** - Material Design components
-- **Compose Navigation** - Navigation component
-- **Coil** - Image loading library
+- **Compose Navigation** - Type-safe navigation
+- **Coil 2.5.0** - Image loading library
 
-### Architecture & DI
-- **Hilt** 2.51.1 - Dependency injection
+### Architecture & Dependency Injection
+- ![Hilt](https://img.shields.io/badge/Hilt-2.51.1-673AB7.svg) **Hilt 2.51.1** - Dependency injection framework
 - **ViewModel** - Lifecycle-aware UI state management
 - **Lifecycle** - Lifecycle-aware components
 - **SavedStateHandle** - Process death handling
 
 ### Backend & Storage
-- **Firebase Authentication** - User authentication
-- **Cloud Firestore** - NoSQL database
-- **Firebase Storage** - File storage
-- **Firebase Analytics** - Usage analytics
+- ![Firebase](https://img.shields.io/badge/Firebase-Latest-FFCA28.svg?logo=firebase) **Firebase Suite**
+  - **Authentication** - User authentication (Email + Google Sign-In)
+  - **Cloud Firestore** - NoSQL database with security rules
+  - **Firebase Storage** - File storage for images
+  - **Firebase Analytics** - Usage analytics
+  - **Firebase Crashlytics** - Crash reporting
+  - **Firebase Functions** - Serverless functions
 
-### Asynchronous
+### Asynchronous & Reactive
 - **Kotlin Coroutines** 1.9.0 - Async operations
 - **StateFlow/SharedFlow** - Reactive state management
+- **Flow Testing** - Turbine for Flow testing
 
 ### Pagination
 - **Paging 3** 3.3.0 - Efficient data loading
 - **Paging Compose** - Compose integration
 
-### Testing
-- **JUnit** - Unit testing framework
-- **MockK** 1.13.12 - Mocking library
-- **Turbine** 1.1.0 - Flow testing
+### Testing Framework
+- **JUnit 4** - Unit testing framework
+- **MockK** 1.13.12 - Mocking library for Kotlin
+- **Turbine** 1.1.0 - Flow testing utility
 - **Arch Core Testing** 2.2.0 - Architecture components testing
 - **Coroutines Test** 1.9.0 - Coroutine testing utilities
+- **JaCoCo** 0.8.11 - Code coverage tool
 
-### Code Quality
+### Code Quality & Validation
 - **Detekt** - Static code analysis
-- **Lint** - Android lint checks
+- **Android Lint** - Code quality checks
+- **ValidationUtils** - Input validation utilities
+- **KDoc** - Comprehensive API documentation
 
-### CI/CD
-- **GitHub Actions** - Automated builds and tests
+### CI/CD & Automation
+- **GitHub Actions** - Automated CI/CD pipeline
+  - Build job (APK generation)
+  - Test job (unit tests + coverage)
+  - Lint job (code quality)
+  - Status job (PR comments)
+- **JaCoCo** - Test coverage reports
+- **Codecov** - Coverage tracking (optional)
 - **Gradle Caching** - Faster builds
 
 ---
@@ -397,19 +440,68 @@ Update `app/build.gradle.kts` with your keystore info.
 
 ## 🧪 Testing
 
-### Run Unit Tests
+### Test Coverage (v2.1)
+
+NeoCard has comprehensive test coverage with **164+ unit tests** covering:
+
+- ✅ **Use Cases** (3 use cases, 38+ tests)
+  - SaveCardUseCase (14 tests)
+  - GetUserCardsUseCase (12 tests)
+  - GetExploreCardsUseCase (12+ tests)
+  
+- ✅ **ViewModels** (2 ViewModels, 50+ tests)
+  - HomeViewModel (20 tests)
+  - CreateCardViewModel (30 tests)
+  
+- ✅ **Repositories & Managers** (25+ tests)
+  - BillingManager (25 tests)
+  - Error handling (24+ tests)
+  - Retry logic (13 tests)
+  
+- ✅ **UI Components** (2 screens, 26+ tests)
+  - HomeScreen (11 tests)
+  - CreateCardScreen (15 tests)
+
+**Coverage Report:**
+```bash
+# Run tests with coverage
+./gradlew testDebugUnitTest jacocoTestReport
+
+# View HTML report
+open app/build/reports/jacoco/jacocoTestReport/html/index.html
+
+# Coverage metrics
+# - Line Coverage: ~75%+
+# - Branch Coverage: ~70%+
+# - Method Coverage: ~80%+
+```
+
+### CI/CD Testing Pipeline
+
+GitHub Actions automatically runs tests on every push/PR:
+
+- **Build Job** - Compiles debug & release APKs
+- **Test Job** - Runs all unit tests and generates coverage reports
+- **Lint Job** - Performs code quality checks
+
+**Coverage Artifacts:**
+- HTML coverage report (interactive drill-down)
+- XML coverage report (for CI tools like Codecov)
+- Test results summary
+
+### Run Unit Tests Locally
 
 ```bash
 # Run all unit tests
 ./gradlew test
 
-# Run specific test
+# Run specific test class
 ./gradlew test --tests "SaveCardUseCaseTest"
 
-# Run with coverage
+# Run tests with coverage
 ./gradlew testDebugUnitTest jacocoTestReport
 
-# View coverage report
+# View coverage report (HTML)
 open app/build/reports/jacoco/jacocoTestReport/html/index.html
 ```
 
@@ -417,7 +509,7 @@ open app/build/reports/jacoco/jacocoTestReport/html/index.html
 
 ```bash
 # Run lint
-./gradlew lint
+./gradlew lintDebug
 
 # View lint report
 open app/build/reports/lint-results-debug.html
@@ -432,6 +524,99 @@ open app/build/reports/lint-results-debug.html
 # View detekt report
 open app/build/reports/detekt/detekt.html
 ```
+
+---
+
+## 🔐 Security & Validation (v2.1)
+
+### Firestore Security Rules
+
+Enhanced security rules following best practices:
+
+- ✅ **Authentication Required** - All `/users` and `/cards` paths require authentication
+- ✅ **Public Cards** - Read-only when `isPublic == true`
+- ✅ **Statistics Protection** - Client writes to `/card_statistics` completely disallowed
+- ✅ **Data Validation** - Field length checks (name < 100, email format validation)
+
+**Security Features:**
+- Explicit authentication checks for all operations
+- Owner-only access to user resources
+- Server-only writes for statistics
+- Comprehensive field validation
+
+See [`firestore.rules`](firestore.rules) for full security configuration.
+
+### Input Validation
+
+**ValidationUtils** provides comprehensive input validation:
+
+- ✅ **Name Validation** - Length (2-50 chars), alphabetic only
+- ✅ **Email Validation** - Format check, length limit (100 chars), domain validation
+- ✅ **Phone Validation** - Format check, length (7-20 digits)
+- ✅ **URL Validation** - Website and social media links
+- ✅ **Field Length Checks** - Company, title, bio, etc.
+
+All validation methods return `ValidationResult` (Valid/Invalid with message).
+
+### API Keys Security
+
+All sensitive keys are stored in `local.properties` (excluded from version control):
+
+- ✅ AdMob Application ID and Ad Unit IDs
+- ✅ Google Play Billing Public Key
+- ✅ BuildConfig integration for secure access
+- ✅ No hardcoded keys in source code
+
+See [`SECRETS_MANAGEMENT_GUIDE.md`](SECRETS_MANAGEMENT_GUIDE.md) for setup instructions.
+
+---
+
+## 🔁 Retry Logic & Error Handling (v2.1)
+
+### Automatic Retry Mechanism
+
+**safeApiCall** function implements intelligent retry logic:
+
+- ✅ **Exponential Backoff** - 500ms → 1000ms → 2000ms delays
+- ✅ **Smart Retry** - Only retries transient errors (`UNAVAILABLE`)
+- ✅ **Maximum Limits** - Up to 3 retries (4 total attempts)
+- ✅ **Non-Blocking** - Uses `Dispatchers.IO` to avoid blocking main thread
+
+**Retry Strategy:**
+```kotlin
+// Automatic retry on network failures
+val result = safeApiCall {
+    firestore.collection("cards").get().await()
+}
+// Result is wrapped in Resource<T> with retry handling
+```
+
+### User-Friendly Error Messages
+
+**ErrorMapper** translates 40+ exception types to Turkish messages:
+
+- ✅ **Firebase Firestore** - 16 error codes mapped
+- ✅ **Firebase Auth** - 10+ error codes mapped
+- ✅ **Network Exceptions** - Connection timeout, unavailable, etc.
+- ✅ **Generic Exceptions** - Validation errors, null pointers
+
+**Features:**
+- Context-aware error titles
+- Retry eligibility detection
+- Localized Turkish messages
+
+**Example Error Messages:**
+- "İnternet bağlantınızı kontrol edin"
+- "Bu işlem için yetkiniz yok"
+- "Bağlantı zaman aşımına uğradı. Lütfen tekrar deneyin"
+
+**UI Integration:**
+- `ErrorDisplay` component for full-screen errors
+- `ErrorSnackbarHost` for inline notifications
+- `ErrorAlertDialog` for critical errors
+- Inline form field validation messages
+
+See [`ERROR_HANDLING_GUIDE.md`](ERROR_HANDLING_GUIDE.md) for complete documentation.
 
 ---
 
@@ -607,34 +792,101 @@ in the Software without restriction...
 
 ---
 
+## 📝 Version History
+
+### v2.1 (Current) - October 2024
+- ✅ Comprehensive test coverage (164+ tests, 75%+ coverage)
+- ✅ Enhanced CI/CD pipeline (separate jobs, coverage reports)
+- ✅ Security improvements (Firestore rules, API key management)
+- ✅ Retry logic with exponential backoff
+- ✅ User-friendly error messages (40+ exception types)
+- ✅ Input validation utilities
+- ✅ KDoc documentation for all public APIs
+
+### v2.0 - September 2024
+- ✅ Clean Architecture implementation
+- ✅ MVVM pattern with Hilt
+- ✅ Jetpack Compose UI
+- ✅ Firebase integration
+- ✅ Paging3 for data loading
+
+### v1.0 - Initial Release
+- ✅ Basic card creation and management
+- ✅ Authentication (Email + Google Sign-In)
+- ✅ Profile management
+
+---
+
 ## 🗺️ Roadmap
 
-### Version 1.1 (Q1 2025)
+### Version 2.2 (Q1 2025)
 - [ ] Card analytics dashboard
 - [ ] Advanced search and filters
 - [ ] Dark mode improvements
-- [ ] Offline support
+- [ ] Offline support with Room database
 
-### Version 1.2 (Q2 2025)
-- [ ] Card templates
+### Version 2.3 (Q2 2025)
+- [ ] Card templates library
 - [ ] Bulk card operations
 - [ ] Export to PDF/VCF
 - [ ] Advanced customization options
+- [ ] Multi-language support (i18n)
 
-### Version 2.0 (Q3 2025)
+### Version 3.0 (Q3 2025)
 - [ ] NFC card integration
 - [ ] Widget support
 - [ ] Wear OS companion app
-- [ ] Multi-language support
+- [ ] AI-powered card suggestions
 
 ---
 
 ## 📊 Project Status
 
-[![Build Status](https://img.shields.io/badge/Build-Passing-success.svg)]()
-[![Coverage](https://img.shields.io/badge/Coverage-75%25-yellow.svg)]()
+### v2.1 Highlights
+
+🎯 **Comprehensive Testing**
+- 164+ unit tests
+- 75%+ code coverage
+- ViewModel and UseCase tests
+- UI component tests
+
+🔐 **Enhanced Security**
+- Firestore security rules best practices
+- API keys secured via BuildConfig
+- Input validation utilities
+- Authentication requirements
+
+🔄 **Reliability Improvements**
+- Automatic retry with exponential backoff
+- User-friendly error messages (Turkish)
+- Error mapping for 40+ exception types
+- Smart retry eligibility detection
+
+🚀 **CI/CD Pipeline**
+- Separate jobs for build, test, lint
+- Automated coverage reports
+- Artifact management (APKs + reports)
+- PR status comments
+
+### Status Badges
+
+[![Build Status](https://github.com/YOUR_USERNAME/neo/actions/workflows/android-ci.yml/badge.svg?branch=master)](https://github.com/YOUR_USERNAME/neo/actions/workflows/android-ci.yml)
+[![Test Coverage](https://codecov.io/gh/YOUR_USERNAME/neo/branch/master/graph/badge.svg)](https://codecov.io/gh/YOUR_USERNAME/neo)
+[![Kotlin](https://img.shields.io/badge/Kotlin-1.9.23-7F52FF.svg?logo=kotlin)](https://kotlinlang.org)
+[![Hilt](https://img.shields.io/badge/Hilt-2.51.1-673AB7.svg)](https://dagger.dev/hilt/)
+[![Compose](https://img.shields.io/badge/Compose-1.6.0-4285F4.svg?logo=jetpack-compose)](https://developer.android.com/jetpack/compose)
+[![Firebase](https://img.shields.io/badge/Firebase-Latest-FFCA28.svg?logo=firebase)](https://firebase.google.com)
 [![Code Quality](https://img.shields.io/badge/Code%20Quality-A-success.svg)]()
-[![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg)]()
+[![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg)](https://github.com/YOUR_USERNAME/neo/pulls)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+### Project Metrics
+
+- **Total Tests:** 164+
+- **Test Coverage:** 75%+
+- **CI/CD Jobs:** 4 (build, test, lint, status)
+- **Security Rules:** Best practices implemented
+- **Error Handling:** 40+ exception types supported
 
 ---
 

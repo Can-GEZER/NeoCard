@@ -14,6 +14,8 @@ import com.cangzr.neocard.data.repository.AuthRepository
 import com.cangzr.neocard.domain.usecase.GetUserCardsUseCase
 import com.cangzr.neocard.domain.usecase.SaveCardUseCase
 import com.cangzr.neocard.ui.screens.createcard.utils.CardCreationUtils
+import com.cangzr.neocard.utils.ValidationResult
+import com.cangzr.neocard.utils.ValidationUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -135,6 +137,37 @@ class CreateCardViewModel @Inject constructor(
     private val _showPremiumDialog = MutableStateFlow(false)
     val showPremiumDialog: StateFlow<Boolean> = _showPremiumDialog
     
+    // Validation error states
+    private val _nameError = MutableStateFlow<String?>(null)
+    val nameError: StateFlow<String?> = _nameError
+    
+    private val _surnameError = MutableStateFlow<String?>(null)
+    val surnameError: StateFlow<String?> = _surnameError
+    
+    private val _emailError = MutableStateFlow<String?>(null)
+    val emailError: StateFlow<String?> = _emailError
+    
+    private val _phoneError = MutableStateFlow<String?>(null)
+    val phoneError: StateFlow<String?> = _phoneError
+    
+    private val _websiteError = MutableStateFlow<String?>(null)
+    val websiteError: StateFlow<String?> = _websiteError
+    
+    private val _linkedinError = MutableStateFlow<String?>(null)
+    val linkedinError: StateFlow<String?> = _linkedinError
+    
+    private val _githubError = MutableStateFlow<String?>(null)
+    val githubError: StateFlow<String?> = _githubError
+    
+    private val _twitterError = MutableStateFlow<String?>(null)
+    val twitterError: StateFlow<String?> = _twitterError
+    
+    private val _instagramError = MutableStateFlow<String?>(null)
+    val instagramError: StateFlow<String?> = _instagramError
+    
+    private val _facebookError = MutableStateFlow<String?>(null)
+    val facebookError: StateFlow<String?> = _facebookError
+    
     init {
         checkPremiumStatus()
     }
@@ -147,18 +180,28 @@ class CreateCardViewModel @Inject constructor(
     
     fun updateName(value: String) {
         _name.value = value
+        // Clear error when user starts typing
+        _nameError.value = null
+        // Validate immediately
+        validateName()
     }
     
     fun updateSurname(value: String) {
         _surname.value = value
+        _surnameError.value = null
+        validateSurname()
     }
     
     fun updatePhone(value: String) {
         _phone.value = value
+        _phoneError.value = null
+        validatePhone()
     }
     
     fun updateEmail(value: String) {
         _email.value = value
+        _emailError.value = null
+        validateEmail()
     }
     
     fun updateCompany(value: String) {
@@ -171,26 +214,38 @@ class CreateCardViewModel @Inject constructor(
     
     fun updateWebsite(value: String) {
         _website.value = value
+        _websiteError.value = null
+        validateWebsite()
     }
     
     fun updateLinkedin(value: String) {
         _linkedin.value = value
+        _linkedinError.value = null
+        validateLinkedIn()
     }
     
     fun updateInstagram(value: String) {
         _instagram.value = value
+        _instagramError.value = null
+        validateInstagram()
     }
     
     fun updateTwitter(value: String) {
         _twitter.value = value
+        _twitterError.value = null
+        validateTwitter()
     }
     
     fun updateFacebook(value: String) {
         _facebook.value = value
+        _facebookError.value = null
+        validateFacebook()
     }
     
     fun updateGithub(value: String) {
         _github.value = value
+        _githubError.value = null
+        validateGitHub()
     }
     
     fun updateBackgroundColor(color: androidx.compose.ui.graphics.Color) {
@@ -267,7 +322,96 @@ class CreateCardViewModel @Inject constructor(
         _isPublic.value = true
     }
     
+    // Validation methods
+    private fun validateName() {
+        val result = ValidationUtils.validateName(_name.value, isRequired = true)
+        _nameError.value = result.getErrorOrNull()
+    }
+    
+    private fun validateSurname() {
+        val result = ValidationUtils.validateSurname(_surname.value, isRequired = false)
+        _surnameError.value = result.getErrorOrNull()
+    }
+    
+    private fun validateEmail() {
+        val result = ValidationUtils.validateEmail(_email.value, isRequired = false)
+        _emailError.value = result.getErrorOrNull()
+    }
+    
+    private fun validatePhone() {
+        val result = ValidationUtils.validatePhone(_phone.value, isRequired = false)
+        _phoneError.value = result.getErrorOrNull()
+    }
+    
+    private fun validateWebsite() {
+        val result = ValidationUtils.validateWebsite(_website.value, isRequired = false)
+        _websiteError.value = result.getErrorOrNull()
+    }
+    
+    private fun validateLinkedIn() {
+        val result = ValidationUtils.validateLinkedIn(_linkedin.value)
+        _linkedinError.value = result.getErrorOrNull()
+    }
+    
+    private fun validateGitHub() {
+        val result = ValidationUtils.validateGitHub(_github.value)
+        _githubError.value = result.getErrorOrNull()
+    }
+    
+    private fun validateTwitter() {
+        val result = ValidationUtils.validateTwitter(_twitter.value)
+        _twitterError.value = result.getErrorOrNull()
+    }
+    
+    private fun validateInstagram() {
+        val result = ValidationUtils.validateInstagram(_instagram.value)
+        _instagramError.value = result.getErrorOrNull()
+    }
+    
+    private fun validateFacebook() {
+        val result = ValidationUtils.validateFacebook(_facebook.value)
+        _facebookError.value = result.getErrorOrNull()
+    }
+    
+    /**
+     * Validates all form fields
+     * @return true if all fields are valid
+     */
+    private fun validateAllFields(): Boolean {
+        validateName()
+        validateSurname()
+        validateEmail()
+        validatePhone()
+        validateWebsite()
+        validateLinkedIn()
+        validateGitHub()
+        validateTwitter()
+        validateInstagram()
+        validateFacebook()
+        
+        return _nameError.value == null &&
+                _surnameError.value == null &&
+                _emailError.value == null &&
+                _phoneError.value == null &&
+                _websiteError.value == null &&
+                _linkedinError.value == null &&
+                _githubError.value == null &&
+                _twitterError.value == null &&
+                _instagramError.value == null &&
+                _facebookError.value == null
+    }
+    
     fun saveCard(context: Context, onSuccess: () -> Unit) {
+        // Validate all fields before saving
+        if (!validateAllFields()) {
+            _uiState.value = Resource.Error(
+                exception = IllegalArgumentException("Validation failed"),
+                message = "Form validation failed",
+                userMessage = "Lütfen tüm alanları doğru şekilde doldurun"
+            )
+            return
+        }
+        
         val currentUser = authRepository.getCurrentUser()
         if (currentUser == null) {
             _uiState.value = Resource.Error(

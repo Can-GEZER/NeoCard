@@ -1,3 +1,8 @@
+import java.util.Properties
+import org.gradle.api.tasks.testing.Test
+import org.gradle.testing.jacoco.tasks.JacocoReport
+import org.gradle.testing.jacoco.plugins.JacocoTaskExtension
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -6,6 +11,7 @@ plugins {
     id("com.google.firebase.crashlytics")
     alias(libs.plugins.hilt.android)
     kotlin("kapt")
+    id("jacoco")
 }
 
 
@@ -22,6 +28,14 @@ android {
             keyPassword = project.findProperty("KEY_PASSWORD") as String? ?: ""
         }
     }
+    
+    // Load secrets from local.properties
+    val localPropertiesFile = rootProject.file("local.properties")
+    val localProperties = Properties().apply {
+        if (localPropertiesFile.exists()) {
+            localPropertiesFile.inputStream().use { load(it) }
+        }
+    }
 
     defaultConfig {
         applicationId = "com.cangzr.neocard"
@@ -31,9 +45,27 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Load AdMob keys from local.properties or use empty string as fallback
+        val admobAppId = localProperties.getProperty("ADMOB_APPLICATION_ID", "")
+        val admobBannerId = localProperties.getProperty("ADMOB_BANNER_AD_UNIT_ID", "")
+        val admobInterstitialId = localProperties.getProperty("ADMOB_INTERSTITIAL_AD_UNIT_ID", "")
+        val billingPublicKey = localProperties.getProperty("BILLING_PUBLIC_KEY", "")
+        
+        // BuildConfig fields for API keys
+        buildConfigField("String", "ADMOB_APPLICATION_ID", "\"$admobAppId\"")
+        buildConfigField("String", "ADMOB_BANNER_AD_UNIT_ID", "\"$admobBannerId\"")
+        buildConfigField("String", "ADMOB_INTERSTITIAL_AD_UNIT_ID", "\"$admobInterstitialId\"")
+        buildConfigField("String", "BILLING_PUBLIC_KEY", "\"$billingPublicKey\"")
+        
+        // Manifest placeholders for AdMob
+        manifestPlaceholders["admobApplicationId"] = admobAppId
     }
 
     buildTypes {
+        debug {
+            enableUnitTestCoverage = true
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
@@ -53,6 +85,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -125,4 +158,97 @@ dependencies {
     // Paging3
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)
+}
+
+// JaCoCo Test Coverage Configuration
+jacoco {
+    toolVersion = "0.8.11"
+}
+
+tasks.withType<Test> {
+    configure<JacocoTaskExtension> {
+        isIncludeNoLocationClasses = true
+        excludes = listOf("jdk.internal.*")
+    }
+}
+
+tasks {
+    register<JacocoReport>("jacocoTestReport") {
+        dependsOn("testDebugUnitTest")
+        group = "verification"
+        
+        reports {
+            xml.required.set(true)
+            html.required.set(true)
+            csv.required.set(false)
+        }
+        
+        val fileFilter = listOf(
+            "**/R.class",
+            "**/R$*.class",
+            "**/BuildConfig.*",
+            "**/Manifest*.*",
+            "**/*Test*.*",
+            "android/**/*.*",
+            "**/*_MembersInjector.*",
+            "**/Dagger*Component.*",
+            "**/Dagger*Component\$Builder.*",
+            "**/*Module_*Factory.*",
+            "**/*_Factory.*",
+            "**/*_Hilt.*",
+            "**/Hilt_*.*",
+            "**/*_ViewBinding.*",
+            "**/*_ViewBinding\$*.*",
+            "**/BR.*",
+            "**/di/**",
+            "**/hilt/**"
+        )
+        
+        val debugTree = fileTree("${layout.buildDirectory.get().asFile}/intermediates/javac/debug") {
+            exclude(fileFilter)
+        }
+        val mainSrc = "${project.projectDir}/src/main/java"
+        
+        sourceDirectories.setFrom(files(mainSrc))
+        classDirectories.setFrom(files(debugTree))
+        executionData.setFrom(fileTree("${layout.buildDirectory.get().asFile}") {
+            include("jacoco/testDebugUnitTest.exec")
+        })
+    }
+    
+    register<JacocoReport>("jacocoTestReportRelease") {
+        dependsOn("testReleaseUnitTest")
+        group = "verification"
+        
+        reports {
+            xml.required.set(true)
+            html.required.set(true)
+        }
+        
+        val fileFilter = listOf(
+            "**/R.class",
+            "**/R$*.class",
+            "**/BuildConfig.*",
+            "**/Manifest*.*",
+            "**/*Test*.*",
+            "android/**/*.*",
+            "**/*_MembersInjector.*",
+            "**/Dagger*Component.*",
+            "**/*Module_*Factory.*",
+            "**/*_Factory.*",
+            "**/*_Hilt.*",
+            "**/Hilt_*.*"
+        )
+        
+        val debugTree = fileTree("${layout.buildDirectory.get().asFile}/intermediates/javac/release") {
+            exclude(fileFilter)
+        }
+        val mainSrc = "${project.projectDir}/src/main/java"
+        
+        sourceDirectories.setFrom(files(mainSrc))
+        classDirectories.setFrom(files(debugTree))
+        executionData.setFrom(fileTree("${layout.buildDirectory.get().asFile}") {
+            include("jacoco/testReleaseUnitTest.exec")
+        })
+    }
 }

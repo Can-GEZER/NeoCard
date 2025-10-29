@@ -3,6 +3,7 @@ package com.cangzr.neocard.ads
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import com.cangzr.neocard.BuildConfig
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
@@ -34,10 +35,10 @@ class AdManager private constructor(private val context: Context) {
     private var interstitialAd: InterstitialAd? = null
     private val adRequest: AdRequest = AdRequest.Builder().build()
 
-    // Test reklamları için ID'ler
+    // Ad Unit IDs loaded from BuildConfig (secured via local.properties)
     companion object {
-        private const val BANNER_AD_UNIT_ID = "ca-app-pub-3940256099942544/6300978111" // Test Banner ID
-        private const val INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712" // Test Interstitial ID
+        private val BANNER_AD_UNIT_ID = BuildConfig.ADMOB_BANNER_AD_UNIT_ID
+        private val INTERSTITIAL_AD_UNIT_ID = BuildConfig.ADMOB_INTERSTITIAL_AD_UNIT_ID
         
         @Volatile
         private var instance: AdManager? = null

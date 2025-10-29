@@ -5,7 +5,26 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.firebase.auth.FirebaseUser
 
 /**
- * Kimlik doğrulama işlemleri için repository interface
+ * AuthRepository interface defines authentication and user profile operations.
+ * 
+ * This repository provides a clean abstraction layer for Firebase Authentication
+ * and user profile management operations. All authentication flows and user
+ * account management operations are handled through this interface.
+ * 
+ * **Key Operations:**
+ * - Email/password authentication (sign in, sign up, password reset)
+ * - Google Sign-In integration
+ * - User profile CRUD operations
+ * - Account deletion
+ * 
+ * **Implementation:**
+ * - [FirebaseAuthRepository][com.cangzr.neocard.data.repository.impl.FirebaseAuthRepository] - Firebase implementation
+ * 
+ * @see [FirebaseUser] Firebase user object
+ * @see [Resource] Result wrapper for all operations
+ * @see com.cangzr.neocard.ui.screens.AuthScreen Authentication UI
+ * 
+ * @since 1.0
  */
 interface AuthRepository {
     

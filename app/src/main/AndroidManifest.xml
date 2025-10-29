@@ -25,9 +25,10 @@
         tools:targetApi="31">
 
         <!-- AdMob uygulama kimliği -->
+        <!-- Application ID is loaded from BuildConfig via manifestPlaceholder -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
+            android:value="${admobApplicationId}"/>
             
         <activity
             android:name=".MainActivity"

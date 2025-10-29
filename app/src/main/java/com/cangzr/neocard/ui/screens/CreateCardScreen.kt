@@ -70,6 +70,9 @@ import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -116,6 +119,18 @@ fun CreateCardScreen(navController: NavController) {
     val showPremiumDialog by viewModel.showPremiumDialog.collectAsState()
     val isPublic by viewModel.isPublic.collectAsState()
     
+    // Validation error states
+    val nameError by viewModel.nameError.collectAsState()
+    val surnameError by viewModel.surnameError.collectAsState()
+    val emailError by viewModel.emailError.collectAsState()
+    val phoneError by viewModel.phoneError.collectAsState()
+    val websiteError by viewModel.websiteError.collectAsState()
+    val linkedinError by viewModel.linkedinError.collectAsState()
+    val githubError by viewModel.githubError.collectAsState()
+    val twitterError by viewModel.twitterError.collectAsState()
+    val instagramError by viewModel.instagramError.collectAsState()
+    val facebookError by viewModel.facebookError.collectAsState()
+    
     // Resource state
     val uiStateResource by viewModel.uiState.collectAsState()
     val isLoading = uiStateResource is com.cangzr.neocard.common.Resource.Loading
@@ -124,27 +139,27 @@ fun CreateCardScreen(navController: NavController) {
     var selectedText by remember { mutableStateOf<TextType?>(null) }
     var showImageOptions by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // Handle UI state changes
     LaunchedEffect(uiStateResource) {
         when (val state = uiStateResource) {
             is com.cangzr.neocard.common.Resource.Success -> {
                 if (state.data.isSaved) {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.card_saved),
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    snackbarHostState.showSnackbar(
+                        message = context.getString(R.string.card_saved),
+                        duration = SnackbarDuration.Short
+                    )
                     navController.popBackStack()
                     viewModel.resetState()
                 }
             }
             is com.cangzr.neocard.common.Resource.Error -> {
-                Toast.makeText(
-                    context,
-                    state.message ?: context.getString(R.string.error_occurred),
-                    Toast.LENGTH_LONG
-                ).show()
+                // Use userMessage instead of technical message
+                snackbarHostState.showSnackbar(
+                    message = state.userMessage,
+                    duration = SnackbarDuration.Long
+                )
                 viewModel.resetState()
             }
             is com.cangzr.neocard.common.Resource.Loading -> {
@@ -523,14 +538,22 @@ fun CreateCardScreen(navController: NavController) {
                         value = name,
                         onValueChange = { viewModel.updateName(it) },
                         label = { Text(context.getString(R.string.name)) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = nameError != null,
+                        supportingText = nameError?.let { 
+                            { Text(it, color = MaterialTheme.colorScheme.error) }
+                        }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = surname,
                         onValueChange = { viewModel.updateSurname(it) },
                         label = { Text(context.getString(R.string.surname)) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = surnameError != null,
+                        supportingText = surnameError?.let { 
+                            { Text(it, color = MaterialTheme.colorScheme.error) }
+                        }
                     )
                 }
 
@@ -545,10 +568,10 @@ fun CreateCardScreen(navController: NavController) {
                         label = { Text(context.getString(R.string.phone)) },
                         leadingIcon = { Icon(Icons.Default.Phone, null) },
                         modifier = Modifier.fillMaxWidth(),
-                        isError = phone.isNotEmpty() && !ValidationUtils.isValidPhone(phone),
-                        supportingText = if (phone.isNotEmpty() && !ValidationUtils.isValidPhone(phone)) {
-                            { Text("Geçerli bir telefon numarası girin", color = MaterialTheme.colorScheme.error) }
-                        } else null
+                        isError = phoneError != null,
+                        supportingText = phoneError?.let { 
+                            { Text(it, color = MaterialTheme.colorScheme.error) }
+                        }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
@@ -560,10 +583,10 @@ fun CreateCardScreen(navController: NavController) {
                         label = { Text(context.getString(R.string.email)) },
                         leadingIcon = { Icon(Icons.Default.Email, null) },
                         modifier = Modifier.fillMaxWidth(),
-                        isError = email.isNotEmpty() && !ValidationUtils.isValidEmail(email),
-                        supportingText = if (email.isNotEmpty() && !ValidationUtils.isValidEmail(email)) {
-                            { Text("Geçerli bir email adresi girin", color = MaterialTheme.colorScheme.error) }
-                        } else null
+                        isError = emailError != null,
+                        supportingText = emailError?.let { 
+                            { Text(it, color = MaterialTheme.colorScheme.error) }
+                        }
                     )
                 }
 
@@ -903,6 +926,12 @@ fun CreateCardScreen(navController: NavController) {
                 }
             }
         }
+        
+        // Snackbar host for error messages
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
     // Premium değilse küçük bir bilgi kartı göster
     Box(

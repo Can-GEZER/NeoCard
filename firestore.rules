@@ -23,9 +23,13 @@ service cloud.firestore {
     
     /**
      * Validate email format
+     * RFC compliant email validation
      */
     function isValidEmail(email) {
-      return email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$');
+      return email is string
+        && email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$')
+        && email.size() > 0
+        && email.size() <= 100;
     }
     
     /**
@@ -49,26 +53,32 @@ service cloud.firestore {
     
     /**
      * /users/{uid}
-     * Read/Write: Only by the authenticated user who owns the document
+     * Read/Write: Only by authenticated user who owns the document
+     * REQUIREMENT: Authentication required for all /users paths
      */
     match /users/{uid} {
-      // Allow read if user is authenticated and owns this document
-      allow read: if isOwner(uid);
+      // Require authentication for all operations
+      allow read: if isAuthenticated() && isOwner(uid);
       
-      // Allow create/update if user is authenticated and owns this document
-      allow create, update: if isOwner(uid) 
+      // Require authentication and validate data
+      allow create, update: if isAuthenticated() 
+        && isOwner(uid)
         && validateUserData(request.resource.data);
       
-      // Allow delete only by owner
-      allow delete: if isOwner(uid);
+      // Require authentication for delete
+      allow delete: if isAuthenticated() && isOwner(uid);
       
       /**
        * Validate user data
+       * Requirements:
+       * - Name length < 100
+       * - Email format validation
        */
       function validateUserData(data) {
         return data.keys().hasAll(['id', 'email', 'displayName'])
-          && (data.email == null || isValidEmail(data.email))
-          && (data.displayName == null || isValidLength(data.displayName, 100));
+          && (data.email == null || data.email == '' || isValidEmail(data.email))
+          && (data.displayName == null || isValidLength(data.displayName, 100))
+          && (data.displayName == null || data.displayName.size() > 0);
       }
       
       // ====================================
@@ -77,37 +87,51 @@ service cloud.firestore {
       
       /**
        * /users/{uid}/cards/{cardId}
-       * Read/Write: Only by the authenticated user who owns the card
+       * Read/Write: Only by authenticated user who owns the card
+       * REQUIREMENT: Authentication required for all /cards paths
        */
       match /cards/{cardId} {
-        // Allow read if user owns the parent document
-        allow read: if isOwner(uid);
+        // Require authentication - only owner can read
+        allow read: if isAuthenticated() && isOwner(uid);
         
-        // Allow create/update if user owns the parent document and data is valid
-        allow create, update: if isOwner(uid) 
+        // Require authentication and validate data
+        allow create, update: if isAuthenticated() 
+          && isOwner(uid)
           && validateCardData(request.resource.data);
         
-        // Allow delete only by owner
-        allow delete: if isOwner(uid);
+        // Require authentication for delete
+        allow delete: if isAuthenticated() && isOwner(uid);
         
         /**
          * Validate card data
+         * Requirements:
+         * - Name length < 100
+         * - Email format check
+         * - All field length validations
          */
         function validateCardData(data) {
           return data.keys().hasAll(['name', 'surname', 'email'])
+            // Name validation: required, non-empty, max 100 chars
+            && data.name is string
+            && data.name.size() > 0
             && isValidLength(data.name, 100)
-            && isValidLength(data.surname, 100)
-            && (data.email == null || data.email == '' || isValidEmail(data.email))
-            && (data.company == null || isValidLength(data.company, 200))
-            && (data.title == null || isValidLength(data.title, 200))
-            && (data.phone == null || isValidLength(data.phone, 20))
-            && (data.website == null || isValidLength(data.website, 500))
-            && (data.linkedin == null || isValidLength(data.linkedin, 100))
-            && (data.instagram == null || isValidLength(data.instagram, 100))
-            && (data.twitter == null || isValidLength(data.twitter, 100))
-            && (data.facebook == null || isValidLength(data.facebook, 100))
-            && (data.github == null || isValidLength(data.github, 100))
-            && (data.bio == null || isValidLength(data.bio, 500));
+            // Surname validation: non-empty if provided, max 100 chars
+            && data.surname is string
+            && (data.surname == '' || isValidLength(data.surname, 100))
+            // Email validation: format check if provided
+            && data.email is string
+            && (data.email == '' || isValidEmail(data.email))
+            // Optional field validations
+            && (data.company == null || data.company == '' || (data.company is string && isValidLength(data.company, 200)))
+            && (data.title == null || data.title == '' || (data.title is string && isValidLength(data.title, 200)))
+            && (data.phone == null || data.phone == '' || (data.phone is string && isValidLength(data.phone, 20)))
+            && (data.website == null || data.website == '' || (data.website is string && isValidLength(data.website, 500)))
+            && (data.linkedin == null || data.linkedin == '' || (data.linkedin is string && isValidLength(data.linkedin, 200)))
+            && (data.instagram == null || data.instagram == '' || (data.instagram is string && isValidLength(data.instagram, 200)))
+            && (data.twitter == null || data.twitter == '' || (data.twitter is string && isValidLength(data.twitter, 200)))
+            && (data.facebook == null || data.facebook == '' || (data.facebook is string && isValidLength(data.facebook, 200)))
+            && (data.github == null || data.github == '' || (data.github is string && isValidLength(data.github, 200)))
+            && (data.bio == null || data.bio == '' || (data.bio is string && isValidLength(data.bio, 500)));
         }
       }
       
@@ -131,20 +155,26 @@ service cloud.firestore {
     
     /**
      * /public_cards/{cardId}
-     * Read: Anyone can read if card isPublic == true
-     * Write: Only by card owner or server
+     * Read: Only when isPublic == true (anyone can read public cards)
+     * Write: Only by authenticated card owner or server
+     * REQUIREMENT: Read only when isPublic == true
      */
     match /public_cards/{cardId} {
-      // Allow read if card is public
-      allow read: if resource.data.isPublic == true;
+      // Allow read ONLY if card isPublic == true
+      // Check both in existing resource and new resource data
+      allow read: if resource != null 
+        && resource.data.isPublic == true;
       
       // Allow create/update if user owns the card or is server
+      // Require authentication and validate isPublic flag
       allow create, update: if isAuthenticated() 
         && (request.auth.uid == request.resource.data.userId || isServer())
-        && request.resource.data.keys().hasAll(['id', 'userId', 'isPublic']);
+        && request.resource.data.keys().hasAll(['id', 'userId', 'isPublic'])
+        && request.resource.data.isPublic == true;
       
-      // Allow delete only by card owner
+      // Allow delete only by authenticated card owner
       allow delete: if isAuthenticated() 
+        && resource != null
         && request.auth.uid == resource.data.userId;
     }
     
@@ -154,20 +184,21 @@ service cloud.firestore {
     
     /**
      * /card_statistics/{cardId}
-     * Read: Only by card owner
-     * Write: Only by server (Cloud Functions)
+     * Read: Only by authenticated card owner
+     * Write: DISALLOWED from clients - Only by server (Cloud Functions)
+     * REQUIREMENT: No client writes allowed
      */
     match /card_statistics/{cardId} {
-      // Allow read if user owns the card
+      // Allow read only if authenticated and user owns the card
       allow read: if isAuthenticated() 
+        && resource != null
         && request.auth.uid == resource.data.cardOwnerId;
       
-      // Allow write only by server/Cloud Functions
+      // DISALLOW all writes from clients - Only server can write
       allow create, update: if isServer();
       
-      // Allow delete only by card owner or server
-      allow delete: if isServer() 
-        || (isAuthenticated() && request.auth.uid == resource.data.cardOwnerId);
+      // Allow delete only by server (card owner cannot delete statistics)
+      allow delete: if isServer();
     }
     
     // ====================================
