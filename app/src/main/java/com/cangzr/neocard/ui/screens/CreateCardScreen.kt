@@ -62,12 +62,14 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.cangzr.neocard.R
+import com.cangzr.neocard.Screen
 import com.cangzr.neocard.data.CardType
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
 import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.SnackbarDuration
@@ -88,14 +90,23 @@ import com.cangzr.neocard.ui.screens.createcard.viewmodels.CreateCardViewModel
 import com.cangzr.neocard.ui.screens.createcard.viewmodels.BackgroundType
 import com.cangzr.neocard.ui.screens.createcard.viewmodels.TextType
 import com.cangzr.neocard.utils.ValidationUtils
+import com.cangzr.neocard.data.model.Skill
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.text.input.KeyboardType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateCardScreen(navController: NavController) {
+fun CreateCardScreen(
+    navController: NavController,
+    cardId: String? = null
+) {
     val context = LocalContext.current
     val viewModel: CreateCardViewModel = hiltViewModel()
 
-    // ViewModel state
     val name by viewModel.name.collectAsState()
     val surname by viewModel.surname.collectAsState()
     val phone by viewModel.phone.collectAsState()
@@ -108,6 +119,9 @@ fun CreateCardScreen(navController: NavController) {
     val twitter by viewModel.twitter.collectAsState()
     val facebook by viewModel.facebook.collectAsState()
     val github by viewModel.github.collectAsState()
+    val bio by viewModel.bio.collectAsState()
+    val cv by viewModel.cv.collectAsState()
+    val skills by viewModel.skills.collectAsState()
     val backgroundColor by viewModel.backgroundColor.collectAsState()
     val backgroundType by viewModel.backgroundType.collectAsState()
     val selectedGradient by viewModel.selectedGradient.collectAsState()
@@ -118,8 +132,10 @@ fun CreateCardScreen(navController: NavController) {
     val isPremium by viewModel.isPremium.collectAsState()
     val showPremiumDialog by viewModel.showPremiumDialog.collectAsState()
     val isPublic by viewModel.isPublic.collectAsState()
+    val isLoadingCard by viewModel.isLoadingCard.collectAsState()
+    val loadCardError by viewModel.loadCardError.collectAsState()
+    val currentCardId by viewModel.cardId.collectAsState()
     
-    // Validation error states
     val nameError by viewModel.nameError.collectAsState()
     val surnameError by viewModel.surnameError.collectAsState()
     val emailError by viewModel.emailError.collectAsState()
@@ -131,39 +147,51 @@ fun CreateCardScreen(navController: NavController) {
     val instagramError by viewModel.instagramError.collectAsState()
     val facebookError by viewModel.facebookError.collectAsState()
     
-    // Resource state
     val uiStateResource by viewModel.uiState.collectAsState()
     val isLoading = uiStateResource is com.cangzr.neocard.common.Resource.Loading
 
-    // Local state
     var selectedText by remember { mutableStateOf<TextType?>(null) }
     var showImageOptions by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    
+    val isEditMode = cardId != null || currentCardId != null
+    
+    LaunchedEffect(cardId) {
+        cardId?.let {
+            viewModel.loadCard(it, context)
+        }
+    }
+    
+    LaunchedEffect(loadCardError) {
+        loadCardError?.let { error ->
+            snackbarHostState.showSnackbar(
+                message = error,
+                duration = SnackbarDuration.Long
+            )
+            kotlinx.coroutines.delay(2000)
+            navController.popBackStack()
+        }
+    }
 
-    // Handle UI state changes
     LaunchedEffect(uiStateResource) {
         when (val state = uiStateResource) {
             is com.cangzr.neocard.common.Resource.Success -> {
                 if (state.data.isSaved) {
-                    snackbarHostState.showSnackbar(
-                        message = context.getString(R.string.card_saved),
-                        duration = SnackbarDuration.Short
-                    )
-                    navController.popBackStack()
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
                     viewModel.resetState()
                 }
             }
             is com.cangzr.neocard.common.Resource.Error -> {
-                // Use userMessage instead of technical message
                 snackbarHostState.showSnackbar(
-                    message = state.userMessage,
+                    message = state.userMessage ?: (state.message ?: context.getString(R.string.error_occurred, "")),
                     duration = SnackbarDuration.Long
                 )
                 viewModel.resetState()
             }
             is com.cangzr.neocard.common.Resource.Loading -> {
-                // Loading indicator handled via isLoading
             }
         }
     }
@@ -172,12 +200,10 @@ fun CreateCardScreen(navController: NavController) {
         viewModel.saveCard(
             context = context,
             onSuccess = {
-                // Success handled in LaunchedEffect
             }
         )
     }
 
-    // Galeri launcher'ı
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -191,13 +217,31 @@ fun CreateCardScreen(navController: NavController) {
         }
     }
 
+    if (isLoadingCard) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                CircularProgressIndicator()
+                Text(
+                    text = context.getString(R.string.loading_card),
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        }
+        return
+    }
+    
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            // Başlık ve Kaydet Butonu
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -206,7 +250,7 @@ fun CreateCardScreen(navController: NavController) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = context.getString(R.string.create_card),
+                    text = if (isEditMode) context.getString(R.string.edit_card) else context.getString(R.string.create_card),
                     style = MaterialTheme.typography.headlineSmall
                 )
 
@@ -226,7 +270,6 @@ fun CreateCardScreen(navController: NavController) {
                 }
             }
 
-            // Önizleme Alanı
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -253,7 +296,6 @@ fun CreateCardScreen(navController: NavController) {
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            // Profil Fotoğrafı
                             if (selectedImageBitmap != null || profileImageUri != null) {
                                 Box(
                                     modifier = Modifier
@@ -284,7 +326,6 @@ fun CreateCardScreen(navController: NavController) {
                                 }
                             }
 
-                            // Kişisel Bilgiler
                             Column {
                                 Text(
                                     text = "$name $surname",
@@ -362,7 +403,6 @@ fun CreateCardScreen(navController: NavController) {
                             }
                         }
 
-                        // Sosyal Medya İkonları
                         Row(
                             modifier = Modifier
                                 .padding(start = 16.dp, top = 8.dp),
@@ -415,7 +455,6 @@ fun CreateCardScreen(navController: NavController) {
                 }
             }
 
-            // Premium avantajlarını gösteren dialog
             if (showPremiumDialog) {
                 AlertDialog(
                     onDismissRequest = { viewModel.updateShowPremiumDialog(false) },
@@ -475,14 +514,12 @@ fun CreateCardScreen(navController: NavController) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Form Alanı
             Column(
                 modifier = Modifier
                     .weight(1f)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Profil Fotoğrafı
                 FormCardContent(title = context.getString(R.string.profile_picture_logo)) {
                     Row(
                         modifier = Modifier
@@ -532,7 +569,6 @@ fun CreateCardScreen(navController: NavController) {
                     }
                 }
 
-                // Kişisel Bilgiler Kartı
                 FormCardContent(title = context.getString(R.string.personal_info)) {
                     OutlinedTextField(
                         value = name,
@@ -557,7 +593,6 @@ fun CreateCardScreen(navController: NavController) {
                     )
                 }
 
-                // İletişim Bilgileri Kartı
                 FormCardContent(title = context.getString(R.string.contact_info)) {
                     OutlinedTextField(
                         value = phone,
@@ -590,7 +625,6 @@ fun CreateCardScreen(navController: NavController) {
                     )
                 }
 
-                // İş Bilgileri Kartı
                 FormCardContent(title = context.getString(R.string.business_info)) {
                     OutlinedTextField(
                         value = company,
@@ -640,12 +674,11 @@ fun CreateCardScreen(navController: NavController) {
                         modifier = Modifier.fillMaxWidth(),
                         isError = website.isNotEmpty() && !ValidationUtils.isValidWebsite(website),
                         supportingText = if (website.isNotEmpty() && !ValidationUtils.isValidWebsite(website)) {
-                            { Text("Geçerli bir website adresi girin (örn: example.com)", color = MaterialTheme.colorScheme.error) }
+                            { Text(context.getString(R.string.validation_website_invalid), color = MaterialTheme.colorScheme.error) }
                         } else null
                     )
                 }
 
-                // Sosyal Medya Kartı
                 FormCardContent(title = context.getString(R.string.social_media)) {
                     OutlinedTextField(
                         value = linkedin,
@@ -657,7 +690,7 @@ fun CreateCardScreen(navController: NavController) {
                         modifier = Modifier.fillMaxWidth(),
                         isError = linkedin.isNotEmpty() && !ValidationUtils.isValidLinkedIn(linkedin),
                         supportingText = if (linkedin.isNotEmpty() && !ValidationUtils.isValidLinkedIn(linkedin)) {
-                            { Text("Geçerli bir LinkedIn profili girin (örn: linkedin.com/in/username)", color = MaterialTheme.colorScheme.error) }
+                            { Text(context.getString(R.string.validation_linkedin_invalid), color = MaterialTheme.colorScheme.error) }
                         } else null
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -671,7 +704,7 @@ fun CreateCardScreen(navController: NavController) {
                         modifier = Modifier.fillMaxWidth(),
                         isError = github.isNotEmpty() && !ValidationUtils.isValidGitHub(github),
                         supportingText = if (github.isNotEmpty() && !ValidationUtils.isValidGitHub(github)) {
-                            { Text("Geçerli bir GitHub profili girin (örn: github.com/username)", color = MaterialTheme.colorScheme.error) }
+                            { Text(context.getString(R.string.validation_github_invalid), color = MaterialTheme.colorScheme.error) }
                         } else null
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -685,7 +718,7 @@ fun CreateCardScreen(navController: NavController) {
                         modifier = Modifier.fillMaxWidth(),
                         isError = twitter.isNotEmpty() && !ValidationUtils.isValidTwitter(twitter),
                         supportingText = if (twitter.isNotEmpty() && !ValidationUtils.isValidTwitter(twitter)) {
-                            { Text("Geçerli bir Twitter profili girin (örn: twitter.com/username)", color = MaterialTheme.colorScheme.error) }
+                            { Text(context.getString(R.string.validation_twitter_invalid), color = MaterialTheme.colorScheme.error) }
                         } else null
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -699,7 +732,7 @@ fun CreateCardScreen(navController: NavController) {
                         modifier = Modifier.fillMaxWidth(),
                         isError = instagram.isNotEmpty() && !ValidationUtils.isValidInstagram(instagram),
                         supportingText = if (instagram.isNotEmpty() && !ValidationUtils.isValidInstagram(instagram)) {
-                            { Text("Geçerli bir Instagram profili girin (örn: instagram.com/username)", color = MaterialTheme.colorScheme.error) }
+                            { Text(context.getString(R.string.validation_instagram_invalid), color = MaterialTheme.colorScheme.error) }
                         } else null
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -713,14 +746,105 @@ fun CreateCardScreen(navController: NavController) {
                         modifier = Modifier.fillMaxWidth(),
                         isError = facebook.isNotEmpty() && !ValidationUtils.isValidFacebook(facebook),
                         supportingText = if (facebook.isNotEmpty() && !ValidationUtils.isValidFacebook(facebook)) {
-                            { Text("Geçerli bir Facebook profili girin (örn: facebook.com/username)", color = MaterialTheme.colorScheme.error) }
+                            { Text(context.getString(R.string.validation_facebook_invalid), color = MaterialTheme.colorScheme.error) }
                         } else null
                     )
                 }
 
-                // Tasarım Kartı
+                if (isPremium) {
+                    FormCardContent(title = context.getString(R.string.additional_info)) {
+                        OutlinedTextField(
+                            value = bio,
+                            onValueChange = { viewModel.updateBio(it) },
+                            label = { Text(context.getString(R.string.bio)) },
+                            placeholder = { Text(context.getString(R.string.biography_placeholder)) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(150.dp),
+                            maxLines = 6
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = cv,
+                            onValueChange = { viewModel.updateCv(it) },
+                            label = { Text(context.getString(R.string.cv_link)) },
+                            placeholder = { Text(context.getString(R.string.cv_placeholder)) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+
+                FormCardContent(title = context.getString(R.string.skills)) {
+                    var skillName by remember { mutableStateOf("") }
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = skillName,
+                            onValueChange = { skillName = it },
+                            label = { Text(context.getString(R.string.skill_name)) },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                            trailingIcon = {
+                                IconButton(
+                                    onClick = {
+                                        if (skillName.isNotBlank()) {
+                                            viewModel.addSkill(skillName)
+                                            skillName = ""
+                                        }
+                                    },
+                                    enabled = skillName.isNotBlank()
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = context.getString(R.string.add_skill)
+                                    )
+                                }
+                            }
+                        )
+                    }
+                    
+                    if (skills.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(skills) { skill ->
+                                AssistChip(
+                                    onClick = { },
+                                    label = {
+                                        Text(
+                                            text = skill.name,
+                                            style = MaterialTheme.typography.labelLarge
+                                        )
+                                    },
+                                    trailingIcon = {
+                                        IconButton(
+                                            onClick = { viewModel.removeSkill(skill) },
+                                            modifier = Modifier.size(20.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Close,
+                                                contentDescription = context.getString(R.string.delete),
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    },
+                                    colors = AssistChipDefaults.assistChipColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+
                 FormCardContent(title = context.getString(R.string.design)) {
-                    // Arkaplan Tipi Seçimi
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -791,13 +915,11 @@ fun CreateCardScreen(navController: NavController) {
                     }
                 }
 
-                // Yazı Stilleri Kartı
                 if (isPremium) {
                     FormCardContent(title = context.getString(R.string.text_styles)) {
                         if (selectedText != null) {
                             val style = textStyles[selectedText] ?: return@FormCardContent
 
-                            // Stil seçenekleri
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -821,7 +943,6 @@ fun CreateCardScreen(navController: NavController) {
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // Font boyutu Slider
                                 Text(context.getString(R.string.font_size, style.fontSize.toInt()))
                             Slider(
                                 value = style.fontSize,
@@ -835,7 +956,6 @@ fun CreateCardScreen(navController: NavController) {
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            // Renk seçici
                             Text(context.getString(R.string.text_color))
                             LazyRow(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -878,7 +998,6 @@ fun CreateCardScreen(navController: NavController) {
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                // Kart Tipi Seçimi
                 CardTypeSelector(
                     selectedType = selectedCardType,
                     onTypeSelected = { viewModel.updateSelectedCardType(it) }
@@ -886,7 +1005,6 @@ fun CreateCardScreen(navController: NavController) {
                 
                 Spacer(modifier = Modifier.height(16.dp))
                 
-                // Gizlilik Ayarları
                 FormCardWithSwitch(
                     title = context.getString(R.string.visibility),
                     isChecked = isPublic,
@@ -897,7 +1015,6 @@ fun CreateCardScreen(navController: NavController) {
             }
         }
 
-        // Yükleme göstergesi
         if (isLoading) {
             Box(
                 modifier = Modifier
@@ -927,13 +1044,11 @@ fun CreateCardScreen(navController: NavController) {
             }
         }
         
-        // Snackbar host for error messages
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
     }
-    // Premium değilse küçük bir bilgi kartı göster
     Box(
         modifier = Modifier
             .fillMaxSize()

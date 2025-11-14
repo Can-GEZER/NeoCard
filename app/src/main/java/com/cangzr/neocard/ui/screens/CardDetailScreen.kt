@@ -1,9 +1,6 @@
 package com.cangzr.neocard.ui.screens
 
-import android.net.Uri
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,7 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -67,7 +63,6 @@ import com.cangzr.neocard.data.model.UserCard
 import com.cangzr.neocard.Screen
 import com.cangzr.neocard.ui.screens.carddetail.components.ExpandableStatisticsHeader
 import com.cangzr.neocard.ui.screens.carddetail.components.InfoDisplayColumn
-import com.cangzr.neocard.ui.screens.carddetail.components.InfoEditColumn
 import com.cangzr.neocard.ui.screens.carddetail.components.StatisticsCard
 import com.cangzr.neocard.ui.screens.carddetail.utils.CardDetailRepository
 import com.cangzr.neocard.ui.screens.carddetail.viewmodels.CardDetailViewModel
@@ -76,8 +71,6 @@ import coil.request.ImageRequest
 import coil.transform.CircleCropTransformation
 import coil.size.Size
 import com.cangzr.neocard.ads.BottomBannerAd
-
-// no custom extensions for icons
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,7 +84,6 @@ fun CardDetailScreen(
     val isPremium by billingManager.isPremium.collectAsState()
     val viewModel: CardDetailViewModel = hiltViewModel()
 
-    // ViewModel state
     val userCard by viewModel.userCard.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val isSaving by viewModel.isSaving.collectAsState()
@@ -99,7 +91,6 @@ fun CardDetailScreen(
     val cardStatistics by viewModel.cardStatistics.collectAsState()
     val isLoadingStats by viewModel.isLoadingStats.collectAsState()
     
-    // Form state from ViewModel
     val name by viewModel.name.collectAsState()
     val surname by viewModel.surname.collectAsState()
     val title by viewModel.title.collectAsState()
@@ -115,33 +106,18 @@ fun CardDetailScreen(
     val bio by viewModel.bio.collectAsState()
     val cv by viewModel.cv.collectAsState()
     
-    // Error states from ViewModel
     val nameError by viewModel.nameError.collectAsState()
     val surnameError by viewModel.surnameError.collectAsState()
     val phoneError by viewModel.phoneError.collectAsState()
     val emailError by viewModel.emailError.collectAsState()
 
-    // Local state
-    var isEditing by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showSuccessMessage by remember { mutableStateOf(false) }
     var successMessage by remember { mutableStateOf("") }
     var showErrorMessage by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
-    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     var showStatistics by remember { mutableStateOf(false) }
 
-    // Resim seçici
-    val launcher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(),
-        onResult = { uri: Uri? ->
-            uri?.let {
-                selectedImageUri = it
-            }
-        }
-    )
-
-    // İlk açılışta veriyi çek
     LaunchedEffect(cardId) {
         viewModel.loadCard(cardId, context)
                     if (isPremium) {
@@ -149,9 +125,7 @@ fun CardDetailScreen(
         }
     }
 
-
-    // Başarı mesajı gösterimi
-    if (showSuccessMessage) {
+if (showSuccessMessage) {
         LaunchedEffect(Unit) {
             kotlinx.coroutines.delay(2000)
             showSuccessMessage = false
@@ -159,7 +133,6 @@ fun CardDetailScreen(
         Toast.makeText(context, successMessage, Toast.LENGTH_SHORT).show()
     }
 
-    // Hata mesajı gösterimi
     if (showErrorMessage) {
         LaunchedEffect(Unit) {
             kotlinx.coroutines.delay(2000)
@@ -169,7 +142,6 @@ fun CardDetailScreen(
     }
 
     if (isLoading) {
-        // Yükleniyor durumu
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircularProgressIndicator()
@@ -181,7 +153,6 @@ fun CardDetailScreen(
     }
 
     if (userCard == null) {
-        // Hata durumu
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(
@@ -261,58 +232,12 @@ fun CardDetailScreen(
                         Icon(Icons.Default.Delete, contentDescription = context.getString(R.string.delete), tint = MaterialTheme.colorScheme.error)
                     }
                     IconButton(onClick = {
-                        if (isEditing) {
-                            // Save using ViewModel
-                                    val updatedCard = userCard?.copy(
-                                        name = name,
-                                        surname = surname,
-                                        title = title,
-                                        company = company,
-                                        phone = phone,
-                                        email = email,
-                                        website = website,
-                                        linkedin = linkedin,
-                                        github = github,
-                                        twitter = twitter,
-                                        instagram = instagram,
-                                        facebook = facebook,
-                                        bio = bio,
-                                        cv = cv
-                                    )
-
-                                        updatedCard?.let { card ->
-                                CardDetailRepository.saveCardWithImage(
-                                    cardId = cardId,
-                                    card = card,
-                                    imageUri = selectedImageUri,
-                                    context = context,
-                                    onSuccess = {
-                                                            isEditing = false
-                                        selectedImageUri = null
-                                                            successMessage = context.getString(R.string.card_updated)
-                                                            showSuccessMessage = true
-                                    },
-                                    onError = { error ->
-                                        errorMessage = error
-                                                            showErrorMessage = true
-                                                        }
-                                )
-                            }
-                        } else {
-                            isEditing = true
-                        }
-                    }, enabled = !isSaving) {
-                        if (isSaving) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        } else {
-                            Icon(
-                                if (isEditing) Icons.Default.Done else Icons.Default.Edit,
-                                contentDescription = if (isEditing) context.getString(R.string.save) else context.getString(R.string.edit)
-                            )
-                        }
+                        navController.navigate(Screen.EditCard.createRoute(cardId))
+                    }) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = context.getString(R.string.edit)
+                        )
                     }
                 }
             )
@@ -325,7 +250,6 @@ fun CardDetailScreen(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // İstatistik başlığı ve kartı (yalnızca premium)
             if (isPremium) {
                 ExpandableStatisticsHeader(
                     isExpanded = showStatistics,
@@ -338,7 +262,6 @@ fun CardDetailScreen(
                     )
                 }
             } else {
-                // Premium olmayanlar için bilgi kartı
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -370,7 +293,6 @@ fun CardDetailScreen(
                             )
                         }
                         Button(onClick = { 
-                            // Profil ekranına yönlendirerek premium satın alma akışına götürebiliriz
                             navController.navigate(Screen.Profile.route)
                             {
                                 popUpTo(Screen.Profile.route) { inclusive = true }}
@@ -381,35 +303,15 @@ fun CardDetailScreen(
                 }
             }
             
-            // Profil resmi
             Box(
                 modifier = Modifier
                     .padding(vertical = 24.dp)
                     .size(120.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                    .clickable(enabled = isEditing) {
-                        if (isEditing) {
-                            launcher.launch("image/*")
-                        }
-                    },
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
-                if (selectedImageUri != null) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(context)
-                            .data(selectedImageUri)
-                            .crossfade(true)
-                            .size(Size.ORIGINAL)
-                            .transformations(CircleCropTransformation())
-                            .build(),
-                            contentDescription = context.getString(R.string.profile_picture),
-                        modifier = Modifier
-                            .size(120.dp)
-                            .clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                } else if (userCard?.profileImageUrl != null && userCard?.profileImageUrl?.isNotEmpty() == true) {
+                if (userCard?.profileImageUrl != null && userCard?.profileImageUrl?.isNotEmpty() == true) {
                     AsyncImage(
                         model = ImageRequest.Builder(context)
                             .data(userCard?.profileImageUrl)
@@ -428,83 +330,29 @@ fun CardDetailScreen(
                 } else {
                     Icon(Icons.Default.AccountCircle, null, Modifier.size(80.dp), tint = MaterialTheme.colorScheme.primary)
                 }
-
-                if (isEditing) {
-                    Box(
-                        modifier = Modifier
-                            .size(120.dp)
-                            .background(Color.Black.copy(alpha = 0.3f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = context.getString(R.string.change_image),
-                            tint = Color.White,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                }
             }
 
-            if (!isEditing) {
-                InfoDisplayColumn(
-                    name = name,
-                    surname = surname,
-                    title = title,
-                    company = company,
-                    phone = phone,
-                    email = email,
-                    website = website,
-                    linkedin = linkedin,
-                    github = github,
-                    twitter = twitter,
-                    instagram = instagram,
-                    facebook = facebook,
-                    cardType = cardType,
-                    bio = bio,
-                    cv = cv,
-                    isPremium = isPremium
-                )
-            } else {
-                InfoEditColumn(
-                    name = name,
-                    surname = surname,
-                    title = title,
-                    company = company,
-                    phone = phone,
-                    email = email,
-                    website = website,
-                    linkedin = linkedin,
-                    github = github,
-                    twitter = twitter,
-                    instagram = instagram,
-                    facebook = facebook,
-                    nameError = nameError,
-                    surnameError = surnameError,
-                    phoneError = phoneError,
-                    emailError = emailError,
-                    onNameChange = { viewModel.updateName(it, context) },
-                    onSurnameChange = { viewModel.updateSurname(it, context) },
-                    onTitleChange = { viewModel.updateTitle(it) },
-                    onCompanyChange = { viewModel.updateCompany(it) },
-                    onPhoneChange = { viewModel.updatePhone(it, context) },
-                    onEmailChange = { viewModel.updateEmail(it, context) },
-                    onWebsiteChange = { viewModel.updateWebsite(it) },
-                    onLinkedinChange = { viewModel.updateLinkedin(it) },
-                    onGithubChange = { viewModel.updateGithub(it) },
-                    onTwitterChange = { viewModel.updateTwitter(it) },
-                    onInstagramChange = { viewModel.updateInstagram(it) },
-                    onFacebookChange = { viewModel.updateFacebook(it) },
-                    bio = bio,
-                    cv = cv,
-                    onBioChange = { viewModel.updateBio(it) },
-                    onCvChange = { viewModel.updateCv(it) },
-                    isPremium = isPremium
-                )
-            }
+            InfoDisplayColumn(
+                name = name,
+                surname = surname,
+                title = title,
+                company = company,
+                phone = phone,
+                email = email,
+                website = website,
+                linkedin = linkedin,
+                github = github,
+                twitter = twitter,
+                instagram = instagram,
+                facebook = facebook,
+                cardType = cardType,
+                bio = bio,
+                cv = cv,
+                skills = userCard?.skills ?: emptyList(),
+                isPremium = isPremium
+            )
         }
         
-        // Alt banner reklam
         BottomBannerAd(
             modifier = Modifier
                 .fillMaxWidth()

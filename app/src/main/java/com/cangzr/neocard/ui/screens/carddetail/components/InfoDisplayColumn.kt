@@ -26,7 +26,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.cangzr.neocard.R
 import com.cangzr.neocard.data.CardType
+import com.cangzr.neocard.data.model.Skill
 import com.cangzr.neocard.ui.screens.carddetail.utils.UrlUtils
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 
 @Composable
 fun InfoDisplayColumn(
@@ -45,6 +51,7 @@ fun InfoDisplayColumn(
     cardType: CardType,
     bio: String = "",
     cv: String = "",
+    skills: List<Skill> = emptyList(),
     isPremium: Boolean = false
 ) {
     val context = LocalContext.current
@@ -134,6 +141,43 @@ fun InfoDisplayColumn(
                     context.startActivity(intent)
                 } catch (e: Exception) {
                     Toast.makeText(context, context.getString(R.string.cv_open_error), Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        if (skills.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = context.getString(R.string.skills),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(skills) { skill ->
+                            AssistChip(
+                                onClick = { },
+                                label = {
+                                    Text(skill.name)
+                                },
+                                colors = AssistChipDefaults.assistChipColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                                )
+                            )
+                        }
+                    }
                 }
             }
         }

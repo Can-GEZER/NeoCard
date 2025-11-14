@@ -42,14 +42,18 @@ import coil.request.ImageRequest
 import coil.transform.CircleCropTransformation
 import com.cangzr.neocard.R
 import com.cangzr.neocard.Screen
+import com.cangzr.neocard.billing.BillingManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import androidx.compose.runtime.collectAsState
 
 @Composable
 fun ProfileCard(navController: NavHostController) {
     val auth = FirebaseAuth.getInstance()
     val firestore = FirebaseFirestore.getInstance()
     val context = LocalContext.current
+    val billingManager = remember { BillingManager.getInstance(context) }
+    val isPremium by billingManager.isPremium.collectAsState()
 
     var userDisplayName by remember { mutableStateOf("") }
     var userPhotoUrl by remember { mutableStateOf<String?>(null) }
@@ -60,16 +64,13 @@ fun ProfileCard(navController: NavHostController) {
 
     LaunchedEffect(currentUser.value) {
         currentUser.value?.let { user ->
-            // Google hesabından gelen bilgileri kullan
             userDisplayName = user.displayName ?: "Bilinmeyen Kullanıcı"
             userPhotoUrl = user.photoUrl?.toString()
             
-            // Firestore'daki kullanıcı bilgilerini kontrol et ve gerekirse güncelle
             firestore.collection("users").document(user.uid)
                 .get()
                 .addOnSuccessListener { document ->
                     if (document != null && document.exists()) {
-                        // Eğer displayName Firestore'da yoksa veya boşsa, Google'dan gelen ismi kullan
                         if (document.getString("displayName").isNullOrEmpty() && !userDisplayName.isNullOrEmpty()) {
                             firestore.collection("users").document(user.uid)
                                 .update("displayName", userDisplayName)
@@ -77,7 +78,6 @@ fun ProfileCard(navController: NavHostController) {
                     }
                 }
             
-            // Okunmamış bildirim sayısını dinle
             firestore.collection("users")
                 .document(user.uid)
                 .collection("notifications")
@@ -99,6 +99,17 @@ fun ProfileCard(navController: NavHostController) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .then(
+                if (isPremium && isLoggedIn) {
+                    Modifier.border(
+                        width = 3.dp,
+                        color = androidx.compose.ui.graphics.Color(0xFFFFD700), // Altın rengi
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                } else {
+                    Modifier
+                }
+            )
             .clickable { if (!isLoggedIn) navController.navigate(Screen.Auth.route) },
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -121,7 +132,6 @@ fun ProfileCard(navController: NavHostController) {
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Kullanıcı profil fotoğrafı (Google'dan)
                         if (userPhotoUrl != null) {
                             AsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)
@@ -137,7 +147,6 @@ fun ProfileCard(navController: NavHostController) {
                                 contentScale = ContentScale.Crop
                             )
                         } else {
-                            // Profil fotoğrafı yoksa varsayılan ikon göster
                             Box(
                                 modifier = Modifier
                                     .size(50.dp)
@@ -176,7 +185,6 @@ fun ProfileCard(navController: NavHostController) {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Bildirim ikonu (Badge ile)
                         androidx.compose.material3.BadgedBox(
                             badge = {
                                 if (unreadNotificationCount > 0) {

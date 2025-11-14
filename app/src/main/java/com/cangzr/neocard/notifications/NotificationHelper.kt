@@ -32,11 +32,9 @@ object NotificationHelper {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         android.util.Log.d("NotificationManager", "NotificationManager alındı")
         
-        // Intent oluştur - notification'a tıklandığında açılacak ekran
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             
-            // Notification tipine göre farklı ekranlara yönlendir
             when (type) {
                 "CONNECTION_REQUEST" -> {
                     putExtra("navigate_to", "connection_requests")
@@ -53,7 +51,6 @@ object NotificationHelper {
                 }
             }
             
-            // Ek data'ları intent'e ekle
             data.forEach { (key, value) ->
                 if (value != null) {
                     putExtra(key, value.toString())
@@ -68,7 +65,6 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         
-        // Notification builder
         val notificationBuilder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.logo3)
             .setContentTitle(title)
@@ -78,7 +74,6 @@ object NotificationHelper {
             .setContentIntent(pendingIntent)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
         
-        // Notification tipine göre özel ayarlar
         when (type) {
             "CONNECTION_REQUEST" -> {
                 notificationBuilder.setColor(context.getColor(R.color.purple_500))
@@ -91,7 +86,6 @@ object NotificationHelper {
             }
         }
         
-        // Notification'ı göster
         val notificationId = System.currentTimeMillis().toInt()
         notificationManager.notify(notificationId, notificationBuilder.build())
         android.util.Log.d("NotificationManager", "Notification gösterildi - ID: $notificationId")

@@ -8,82 +8,31 @@ import java.io.IOException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 
-/**
- * ErrorMapper maps technical exceptions to user-friendly Turkish error messages.
- * 
- * This utility object provides translation of common Firebase and network exceptions
- * into understandable messages for end users. It supports 40+ exception types including
- * Firebase Firestore, Firebase Auth, and network exceptions.
- * 
- * **Supported Exception Types:**
- * - Firebase Firestore exceptions (16 error codes)
- * - Firebase Auth exceptions (10+ error codes)
- * - Network exceptions (UnknownHost, SocketTimeout, IOException)
- * - Generic exceptions (IllegalArgumentException, NullPointerException)
- * 
- * @see [Resource.Error] Uses ErrorMapper for userMessage
- * @see com.cangzr.neocard.ui.components.ErrorDisplay UI components using error messages
- * 
- * @since 1.0
- */
 object ErrorMapper {
     
-    /**
-     * Maps an exception to a user-friendly Turkish error message.
-     * 
-     * This method examines the exception type and returns an appropriate user-friendly
-     * message. If no specific mapping exists, returns the default message.
-     * 
-     * @param exception The exception to map to a user message
-     * @param defaultMessage Default message if no specific mapping exists (default: "Bir hata oluştu. Lütfen tekrar deneyin.")
-     * @return User-friendly error message in Turkish
-     * 
-     * @see [getErrorTitle] Get error title for UI
-     * @see [isRetryableError] Check if error is retryable
-     * 
-     * @since 1.0
-     */
     fun getUserMessage(
         exception: Throwable,
         defaultMessage: String = "Bir hata oluştu. Lütfen tekrar deneyin."
     ): String {
         return when (exception) {
-            // Firebase Firestore Exceptions
             is FirebaseFirestoreException -> mapFirestoreException(exception)
             
-            // Firebase Auth Exceptions
             is FirebaseAuthException -> mapAuthException(exception)
             
-            // Network Exceptions
             is UnknownHostException -> "İnternet bağlantınızı kontrol edin"
             is SocketTimeoutException -> "Bağlantı zaman aşımına uğradı. Lütfen tekrar deneyin"
             is IOException -> "Ağ bağlantısı hatası. Lütfen tekrar deneyin"
             is FirebaseNetworkException -> "İnternet bağlantınızı kontrol edin"
             is FirebaseTooManyRequestsException -> "Çok fazla istek gönderildi. Lütfen daha sonra tekrar deneyin"
             
-            // Generic Exceptions
             is IllegalArgumentException -> "Geçersiz veri girişi"
             is IllegalStateException -> "İşlem şu anda gerçekleştirilemiyor"
             is NullPointerException -> "Beklenmeyen bir hata oluştu"
             
-            // Default
             else -> defaultMessage
         }
     }
     
-    /**
-     * Maps FirebaseFirestoreException to user-friendly Turkish message.
-     * 
-     * This private method handles all Firebase Firestore error codes and returns
-     * appropriate user-friendly messages in Turkish.
-     * 
-     * @param exception The FirebaseFirestoreException to map
-     * @return User-friendly error message for the Firestore exception
-     * 
-     * @see [getUserMessage] Public method that calls this
-     * 
-     * @since 1.0
-     */
     private fun mapFirestoreException(exception: FirebaseFirestoreException): String {
         return when (exception.code) {
             FirebaseFirestoreException.Code.CANCELLED -> 
@@ -138,19 +87,6 @@ object ErrorMapper {
         }
     }
     
-    /**
-     * Maps FirebaseAuthException to user-friendly Turkish message.
-     * 
-     * This private method handles all Firebase Authentication error codes and returns
-     * appropriate user-friendly messages in Turkish.
-     * 
-     * @param exception The FirebaseAuthException to map
-     * @return User-friendly error message for the Auth exception
-     * 
-     * @see [getUserMessage] Public method that calls this
-     * 
-     * @since 1.0
-     */
     private fun mapAuthException(exception: FirebaseAuthException): String {
         return when (exception.errorCode) {
             "ERROR_INVALID_EMAIL" -> 
@@ -196,20 +132,6 @@ object ErrorMapper {
         }
     }
     
-    /**
-     * Gets a short error title for UI display.
-     * 
-     * Returns a brief title that can be used in error dialogs, snackbars, or other UI components.
-     * The title is context-aware and matches the error type.
-     * 
-     * @param exception The exception to get title for
-     * @return Short error title (e.g., "Bağlantı Hatası", "Yetki Hatası")
-     * 
-     * @see [getUserMessage] Get detailed error message
-     * @see com.cangzr.neocard.ui.components.ErrorDisplay ErrorDisplay component
-     * 
-     * @since 1.0
-     */
     fun getErrorTitle(exception: Throwable): String {
         return when (exception) {
             is UnknownHostException, 
@@ -230,30 +152,6 @@ object ErrorMapper {
         }
     }
     
-    /**
-     * Checks if an error is retryable by the user.
-     * 
-     * Some errors like network timeouts or temporary unavailability can be retried.
-     * This method determines if showing a retry button makes sense for the given error.
-     * 
-     * **Retryable Errors:**
-     * - Network exceptions (UnknownHostException, SocketTimeoutException, IOException)
-     * - Temporary Firebase errors (UNAVAILABLE, DEADLINE_EXCEEDED, ABORTED)
-     * 
-     * **Non-Retryable Errors:**
-     * - Permission errors (PERMISSION_DENIED)
-     * - Not found errors (NOT_FOUND)
-     * - Authentication errors (UNAUTHENTICATED)
-     * - Validation errors (IllegalArgumentException)
-     * 
-     * @param exception The exception to check
-     * @return true if the error is retryable, false otherwise
-     * 
-     * @see [getUserMessage] Get error message
-     * @see com.cangzr.neocard.ui.components.ErrorDisplay ErrorDisplay with retry button
-     * 
-     * @since 1.0
-     */
     fun isRetryableError(exception: Throwable): Boolean {
         return when (exception) {
             is UnknownHostException,

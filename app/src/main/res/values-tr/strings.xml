@@ -123,6 +123,12 @@
     <string name="uploading">Yükleniyor...</string>
     <string name="upload_error">Resim yüklenirken bir hata oluştu</string>
     <string name="preview">Önizleme</string>
+    <string name="validation_website_invalid">Geçerli bir website adresi girin (örn: example.com)</string>
+    <string name="validation_linkedin_invalid">Geçerli bir LinkedIn profili girin (örn: linkedin.com/in/username)</string>
+    <string name="validation_github_invalid">Geçerli bir GitHub profili girin (örn: github.com/username)</string>
+    <string name="validation_twitter_invalid">Geçerli bir Twitter profili girin (örn: twitter.com/username)</string>
+    <string name="validation_instagram_invalid">Geçerli bir Instagram profili girin (örn: instagram.com/username)</string>
+    <string name="validation_facebook_invalid">Geçerli bir Facebook profili girin (örn: facebook.com/username)</string>
     
     <!-- Connection Requests -->
     <string name="connection_requests">Bağlantı İstekleri</string>
@@ -195,4 +201,26 @@
     <string name="promo_code_already_used">Bu promosyon kodunu daha önce kullanmışsınız</string>
     <string name="promo_code_success">Promosyon kodu başarıyla kullanıldı! 1 haftalık premium üyelik aktif edildi.</string>
     <string name="premium_activation_error">Premium üyelik etkinleştirilirken bir hata oluştu.</string>
+    
+    <!-- Referral System -->
+    <string name="invite_friend">Arkadaşını Davet Et</string>
+    <string name="invite_friend_description">Arkadaşlarınızı davet edin, her davet için 1 haftalık premium üyelik kazanın!</string>
+    <string name="invite_message">NeoCard uygulamasını denemek ister misin? Bu link ile kayıt ol: %s</string>
+    <string name="referral_count">%d kişi davet ettiniz</string>
+    <string name="your_referral_code">Referans Kodunuz: %s</string>
+    <string name="skills">Beceriler ve Yetkinlikler</string>
+    <string name="add_skill">Beceri Ekle</string>
+    <string name="skill_name">Beceri Adı</string>
+    <string name="skill_level">Seviye</string>
+    <string name="experience_years">Deneyim Yılı</string>
+    <string name="skill_beginner">Başlangıç</string>
+    <string name="skill_intermediate">Orta</string>
+    <string name="skill_advanced">İleri</string>
+    <string name="skill_expert">Uzman</string>
+    <string name="skill_premium_only">Seviye ve deneyim yılı özellikleri premium üyelere özeldir</string>
+    <string name="select_level">Seviye Seçin</string>
+    <string name="clear">Temizle</string>
+    <string name="remove">Kaldır</string>
+    <string name="year">Yıl</string>
+    <string name="years">Yıl</string>
 </resources>

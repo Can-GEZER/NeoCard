@@ -103,7 +103,6 @@ fun ConnectionRequestsSection(navController: NavHostController) {
             )
             .padding(12.dp)
     ) {
-        // Başlık ve Sayaç
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -129,10 +128,8 @@ fun ConnectionRequestsSection(navController: NavHostController) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Tümünü Gör butonu
                 TextButton(
                     onClick = { 
-                        // Navigation'a bağlantı istekleri ekranına git
                         navController.navigate(Screen.ConnectionRequests.route)
                     }
                 ) {
@@ -147,7 +144,6 @@ fun ConnectionRequestsSection(navController: NavHostController) {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // İçerik
         if (isLoading) {
             Box(
                 modifier = Modifier
@@ -248,12 +244,10 @@ fun ConnectionRequestCard(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Kullanıcı Bilgileri
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Profil Avatar
                 Box(
                     modifier = Modifier
                         .size(40.dp)
@@ -287,7 +281,6 @@ fun ConnectionRequestCard(
                 }
             }
 
-            // Butonlar - Sadece ikonlarla, evrensel ve her zaman sığar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)

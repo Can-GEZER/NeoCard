@@ -14,10 +14,6 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 
-/**
- * Her X öğeden sonra reklam eklemek için genişletilebilen fonksiyon
- * Mesela iş ilanlarında her 3 ilandan sonra reklam
- */
 @Composable
 fun <T> withAdItems(
     items: List<T>,
@@ -31,19 +27,15 @@ fun <T> withAdItems(
     
     val composableItems = mutableListOf<@Composable () -> Unit>()
     
-    // ShowAds true ise reklamları ekle, değilse sadece öğeleri ekle
     if (showAds) {
         items.forEachIndexed { index, item ->
-            // Öğe ekle
             composableItems.add { itemContent(item) }
             
-            // Her adInterval öğeden sonra reklam ekle (0'dan başladığı için +1)
             if ((index + 1) % adInterval == 0 && index < items.size - 1) {
                 composableItems.add { adContent() }
             }
         }
     } else {
-        // Premium kullanıcı, reklamları eklemeden sadece öğeleri ekle
         items.forEach { item ->
             composableItems.add { itemContent(item) }
         }
@@ -52,9 +44,6 @@ fun <T> withAdItems(
     return composableItems
 }
 
-/**
- * Listeler arasına eklenecek satır içi reklam
- */
 @Composable
 fun InlineAdView(modifier: Modifier = Modifier) {
     val adManager = AdManager.getInstance(LocalContext.current)
@@ -72,18 +61,12 @@ fun InlineAdView(modifier: Modifier = Modifier) {
     }
 }
 
-/**
- * Bottom navigation altına eklenecek banner reklam
- */
 @Composable
 fun BottomBannerAd(modifier: Modifier = Modifier) {
     val adManager = AdManager.getInstance(LocalContext.current)
     adManager.BannerAd(modifier = modifier.fillMaxWidth())
 }
 
-/**
- * AdView oluşturmak için yardımcı fonksiyon
- */
 private fun createBannerAdView(context: Context): AdView {
     return AdView(context).apply {
         setAdSize(AdSize.BANNER)

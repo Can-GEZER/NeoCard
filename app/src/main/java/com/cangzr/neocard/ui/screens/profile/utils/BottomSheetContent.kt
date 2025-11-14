@@ -24,7 +24,6 @@ fun BottomSheetContent(selectedOption: String, onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState()
     ) {
-        // LazyColumn ile kaydırılabilir içerik
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()

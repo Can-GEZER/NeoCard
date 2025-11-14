@@ -4,43 +4,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 import com.cangzr.neocard.data.CardType
 
-/**
- * UserCard data model representing a business card or contact card in the NeoCard application.
- * 
- * This class contains all information needed to display and manage a digital business card,
- * including contact information, social media links, visual customization options, and
- * card visibility settings.
- * 
- * @param id Unique card identifier
- * @param name Card owner's first name
- * @param surname Card owner's last name
- * @param phone Contact phone number
- * @param email Contact email address
- * @param company Company or organization name
- * @param title Job title or position
- * @param website Personal or company website URL
- * @param linkedin LinkedIn profile URL
- * @param instagram Instagram profile URL
- * @param twitter Twitter/X profile URL
- * @param facebook Facebook profile URL
- * @param github GitHub profile URL
- * @param backgroundType Background type: "SOLID" or "GRADIENT"
- * @param backgroundColor Background color in hex format (e.g., "#FFFFFF")
- * @param selectedGradient Gradient preset name if backgroundType is "GRADIENT"
- * @param profileImageUrl Optional URL to profile image
- * @param cardType Card category type (e.g., "Business", "Personal", "Genel")
- * @param textStyles Map of text style configurations for different text elements
- * @param bio Biography or about section text
- * @param cv CV or resume document URL
- * @param isPublic Whether the card is publicly visible in explore section
- * 
- * @see [CardType] Available card types
- * @see [TextStyleDTO] Text styling configuration
- * @see com.cangzr.neocard.domain.usecase.SaveCardUseCase Saving cards
- * @see com.cangzr.neocard.domain.usecase.GetUserCardsUseCase Retrieving user cards
- * 
- * @since 1.0
- */
 data class UserCard(
     val id: String = "",
     val name: String = "",
@@ -63,18 +26,9 @@ data class UserCard(
     val textStyles: Map<String, TextStyleDTO> = emptyMap(),
     val bio: String = "",
     val cv: String = "",
+    val skills: List<Skill> = emptyList(),
     val isPublic: Boolean = true
 ) {
-    /**
-     * Converts the UserCard instance to a [Map] format suitable for Firestore storage.
-     * 
-     * This method is used when saving the card to Firestore, converting all properties
-     * to a key-value map format that Firestore can store.
-     * 
-     * @return Map containing all card properties as key-value pairs
-     * 
-     * @see com.cangzr.neocard.data.repository.CardRepository Card repository operations
-     */
     fun toMap(): Map<String, Any> {
         return mapOf(
             "name" to name,
@@ -97,32 +51,59 @@ data class UserCard(
             "textStyles" to textStyles,
             "bio" to bio,
             "cv" to cv,
+            "skills" to skills.map { it.toMap() },
             "isPublic" to isPublic
         )
     }
+    
+    companion object {
+        fun fromMap(id: String, map: Map<String, Any>): UserCard {
+            val skillsList = (map["skills"] as? List<*>)?.mapNotNull { 
+                if (it is Map<*, *>) {
+                    Skill.fromMap(it as Map<String, Any>)
+                } else null
+            } ?: emptyList()
+            
+            return UserCard(
+                id = id,
+                name = map["name"] as? String ?: "",
+                surname = map["surname"] as? String ?: "",
+                phone = map["phone"] as? String ?: "",
+                email = map["email"] as? String ?: "",
+                company = map["company"] as? String ?: "",
+                title = map["title"] as? String ?: "",
+                website = map["website"] as? String ?: "",
+                linkedin = map["linkedin"] as? String ?: "",
+                instagram = map["instagram"] as? String ?: "",
+                twitter = map["twitter"] as? String ?: "",
+                facebook = map["facebook"] as? String ?: "",
+                github = map["github"] as? String ?: "",
+                backgroundType = map["backgroundType"] as? String ?: "SOLID",
+                backgroundColor = map["backgroundColor"] as? String ?: "#FFFFFF",
+                selectedGradient = map["selectedGradient"] as? String ?: "",
+                profileImageUrl = map["profileImageUrl"] as? String,
+                cardType = map["cardType"] as? String ?: "Genel",
+                textStyles = (map["textStyles"] as? Map<*, *>)?.mapNotNull { (key, value) ->
+                    if (value is Map<*, *>) {
+                        val styleMap = value as Map<String, Any>
+                        key.toString() to TextStyleDTO(
+                            fontSize = (styleMap["fontSize"] as? Number)?.toFloat(),
+                            isBold = styleMap["isBold"] as? Boolean ?: false,
+                            isItalic = styleMap["isItalic"] as? Boolean ?: false,
+                            isUnderlined = styleMap["isUnderlined"] as? Boolean ?: false,
+                            color = styleMap["color"] as? String
+                        )
+                    } else null
+                }?.toMap() ?: emptyMap(),
+                bio = map["bio"] as? String ?: "",
+                cv = map["cv"] as? String ?: "",
+                skills = skillsList,
+                isPublic = map["isPublic"] as? Boolean ?: true
+            )
+        }
+    }
 }
 
-/**
- * ExploreUserCard data model for displaying cards in the explore/public section.
- * 
- * This is a simplified version of [UserCard] used specifically for public card listings
- * to reduce data transfer and improve performance when showing multiple cards.
- * 
- * @param id Unique card identifier
- * @param name Card owner's first name
- * @param surname Card owner's last name
- * @param title Job title or position
- * @param company Company or organization name
- * @param cardType Card category type
- * @param profileImageUrl Profile image URL
- * @param userId Owner's user ID
- * @param isPublic Whether the card is publicly visible
- * 
- * @see [UserCard] Full card model
- * @see com.cangzr.neocard.domain.usecase.GetExploreCardsUseCase Explore cards use case
- * 
- * @since 1.0
- */
 data class ExploreUserCard(
     val id: String = "",
     val name: String = "",
@@ -135,23 +116,6 @@ data class ExploreUserCard(
     val isPublic: Boolean = true
 )
 
-/**
- * TextStyleDTO data model for card text styling configuration.
- * 
- * This class defines how text elements appear on a card, including font size,
- * weight, style, and color. Used in [UserCard.textStyles] map.
- * 
- * @param fontSize Text font size in sp units, or null for default
- * @param isBold Whether text should be bold
- * @param isItalic Whether text should be italic
- * @param isUnderlined Whether text should be underlined
- * @param color Text color in hex format (e.g., "#000000"), or null for default
- * 
- * @see [UserCard] Card that uses text styles
- * @see com.cangzr.neocard.ui.screens.createcard.viewmodels.TextStyle TextStyle in ViewModel
- * 
- * @since 1.0
- */
 data class TextStyleDTO(
     val fontSize: Float? = null,
     val isBold: Boolean = false,

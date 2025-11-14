@@ -60,7 +60,6 @@ fun NotificationsScreen(navController: NavHostController) {
     var isLoading by remember { mutableStateOf(true) }
     val currentUser = auth.currentUser
     
-    // Bildirimleri yükle
     LaunchedEffect(currentUser) {
         if (currentUser != null) {
             try {
@@ -122,7 +121,6 @@ fun NotificationsScreen(navController: NavHostController) {
                                                 )
                                             }
                                         }
-                                        // Listeyi güncelle
                                         notifications = notifications.map { it.copy(read = true) }
                                     }
                                 }
@@ -217,7 +215,6 @@ fun NotificationsScreen(navController: NavHostController) {
                                                 }
                                             }
                                             
-                                            // Bildirim tipine göre yönlendir
                                             when (notification.type) {
                                                 "CONNECTION_REQUEST" -> {
                                                     navController.navigate(Screen.ConnectionRequests.route)
@@ -315,7 +312,6 @@ fun NotificationItemCard(
         elevation = CardDefaults.cardElevation(defaultElevation = if (notification.read) 2.dp else 4.dp)
     ) {
         Box {
-            // Okunmamış bildirimler için sol tarafta renkli çizgi
             if (!notification.read) {
                 Box(
                     modifier = Modifier
@@ -345,7 +341,6 @@ fun NotificationItemCard(
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Gradient ikon container
                 Box(
                     modifier = Modifier
                         .size(56.dp)
@@ -368,12 +363,10 @@ fun NotificationItemCard(
                     )
                 }
                 
-                // İçerik
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    // Başlık ve zaman
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -411,7 +404,6 @@ fun NotificationItemCard(
                         }
                     }
                     
-                    // Mesaj
                     Text(
                         text = notification.body,
                         style = MaterialTheme.typography.bodyMedium,

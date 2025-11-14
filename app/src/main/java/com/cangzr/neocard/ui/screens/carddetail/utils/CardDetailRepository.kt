@@ -36,7 +36,6 @@ object CardDetailRepository {
         }
         
         if (imageUri != null) {
-            // Upload image first
             val storageRef = com.google.firebase.storage.FirebaseStorage.getInstance().reference
             val imageRef = storageRef.child("profile_images/${currentUser.uid}_${System.currentTimeMillis()}.jpg")
             
@@ -51,7 +50,6 @@ object CardDetailRepository {
                     onError(context.getString(R.string.profile_image_upload_error, e.localizedMessage))
                 }
         } else {
-            // Save without image
             saveCardToFirestore(cardId, card, currentUser.uid, context, onSuccess, onError)
         }
     }
@@ -70,7 +68,6 @@ object CardDetailRepository {
             .document(cardId)
             .set(card)
             .addOnSuccessListener {
-                // Update public cards collection
                 val publicCardData = card.toMap().toMutableMap().apply {
                     put("userId", userId)
                     put("id", cardId)
@@ -81,14 +78,11 @@ object CardDetailRepository {
                     .document(cardId)
                     .set(publicCardData)
                     .addOnSuccessListener {
-                        // Kartvizit güncelleme bildirimi gönder
                         CoroutineScope(Dispatchers.IO).launch {
                             try {
-                                // Güncellenen karttan doğrudan isim bilgisini al
                                 val userName = card.name
                                 val userSurname = card.surname
                                 
-                                // Bildirim gönder
                                 NotificationManager.sendCardUpdatedNotification(
                                     cardOwnerId = userId,
                                     cardOwnerName = userName,
@@ -126,19 +120,16 @@ object CardDetailRepository {
             return
         }
         
-        // Delete from user's cards
         firestore.collection("users")
             .document(currentUser.uid)
             .collection("cards")
             .document(cardId)
             .delete()
             .addOnSuccessListener {
-                // Delete from public cards
                 firestore.collection("public_cards")
                     .document(cardId)
                     .delete()
                     .addOnSuccessListener {
-                        // Delete image from storage if exists
                         if (profileImageUrl.isNotEmpty()) {
                             CoroutineScope(Dispatchers.IO).launch {
                                 storageManager.deleteCardImage(currentUser.uid, profileImageUrl)

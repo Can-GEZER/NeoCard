@@ -1,23 +1,20 @@
 package com.cangzr.neocard.domain.usecase
 
-import android.net.Uri
 import com.cangzr.neocard.common.Resource
 import com.cangzr.neocard.data.model.UserCard
 import com.cangzr.neocard.data.repository.CardRepository
 import javax.inject.Inject
 
-class SaveCardUseCase @Inject constructor(
+class GetCardUseCase @Inject constructor(
     private val cardRepository: CardRepository
 ) {
     suspend operator fun invoke(
         userId: String,
-        card: UserCard,
-        imageUri: Uri? = null
-    ): Resource<String> {
-        return cardRepository.saveCard(
+        cardId: String
+    ): Resource<UserCard?> {
+        return cardRepository.getCardById(
             userId = userId,
-            card = card,
-            imageUri = imageUri
+            cardId = cardId
         )
     }
 }

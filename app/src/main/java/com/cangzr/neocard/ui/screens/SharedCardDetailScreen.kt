@@ -30,6 +30,11 @@ import coil.compose.AsyncImage
 import com.cangzr.neocard.R
 import com.cangzr.neocard.data.model.UserCard
 import com.cangzr.neocard.data.model.TextStyleDTO
+import com.cangzr.neocard.data.model.Skill
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -43,7 +48,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-// CompositionLocal değişkenleri
 val LocalCardId = compositionLocalOf<String?> { null }
 val LocalCardOwnerId = compositionLocalOf<String?> { null }
 
@@ -80,7 +84,6 @@ fun SharedCardDetailScreen(
                                 cardOwnerId = userDoc.id // 🔥 Kartın sahibinin Firestore kullanıcı ID'sini al
                                 isLoading = false
                                 
-                                // Kartvizit görüntülenme olayını kaydet
                                 CardAnalyticsManager.getInstance().logCardView(
                                     cardId = cardId,
                                     cardOwnerId = userDoc.id,
@@ -101,7 +104,6 @@ fun SharedCardDetailScreen(
             }
     }
 
-    // 🔥 **Bağlantı isteği durumunu dinle**
     LaunchedEffect(cardOwnerId) {
         auth.currentUser?.uid?.let { currentUserId ->
             cardOwnerId?.let { ownerId ->
@@ -116,7 +118,6 @@ fun SharedCardDetailScreen(
         }
     }
 
-    // 🔥 **Bağlantı durumu dinleme (Bağlantılar listesinde mi?)**
     LaunchedEffect(cardOwnerId) {
         auth.currentUser?.uid?.let { currentUserId ->
             cardOwnerId?.let { ownerId ->
@@ -207,7 +208,6 @@ fun SharedCardDetailScreen(
         } else {
             val card = userCard!!
             
-            // CompositionLocalProvider ile cardId ve cardOwnerId değerlerini alt bileşenlere aktar
             CompositionLocalProvider(
                 LocalCardId provides card.id,
                 LocalCardOwnerId provides cardOwnerId
@@ -219,7 +219,6 @@ fun SharedCardDetailScreen(
                         .verticalScroll(rememberScrollState()),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Profil resmi
                     Box(
                         modifier = Modifier
                             .padding(vertical = 24.dp)
@@ -254,13 +253,11 @@ fun SharedCardDetailScreen(
                         }
                     }
 
-                    // Kullanıcı Bilgileri
                     InfoDisplayColumn(
                         card = card, 
                         context = context
                     )
                     
-                    // Alt banner reklam
                     BottomBannerAd(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -309,7 +306,6 @@ fun InfoDisplayColumn(
 
         Spacer(modifier = Modifier.height(16.dp))
         
-        // Biyografi alanı
         if (card.bio?.isNotEmpty() == true) {
             Card(
                 modifier = Modifier
@@ -374,7 +370,6 @@ fun InfoDisplayColumn(
             }
         }
         
-        // CV alanı
         if (card.cv?.isNotEmpty() == true) {
             InfoItem(R.drawable.document, context.getString(R.string.view_cv)) {
                 try {
@@ -390,9 +385,45 @@ fun InfoDisplayColumn(
             }
         }
 
+        if (card.skills.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = context.getString(R.string.skills),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(card.skills) { skill ->
+                            AssistChip(
+                                onClick = { },
+                                label = {
+                                    Text(skill.name)
+                                },
+                                colors = AssistChipDefaults.assistChipColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Sosyal Medya İkonları
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (card.linkedin.isNotEmpty()) SharedCardSocialMediaIconButton(R.drawable.linkedin, "LinkedIn", formatSharedSocialUrl(card.linkedin, "linkedin.com"), context)
             if (card.github.isNotEmpty()) SharedCardSocialMediaIconButton(R.drawable.github, "GitHub", formatSharedSocialUrl(card.github, "github.com"), context)
@@ -413,7 +444,6 @@ fun InfoItem(iconRes: Int, text: String, onClick: () -> Unit) {
             .fillMaxWidth()
             .padding(8.dp)
             .clickable { 
-                // Link tıklanma olayını kaydet
                 val linkType = when (iconRes) {
                     R.drawable.email -> "email"
                     R.drawable.phone -> "phone"
@@ -450,7 +480,6 @@ fun SharedCardSocialMediaIconButton(iconRes: Int, contentDescription: String, ur
     
     IconButton(onClick = { 
         try {
-            // Link tıklanma olayını kaydet
             CardAnalyticsManager.getInstance().logLinkClick(
                 cardId = cardId,
                 linkType = contentDescription.lowercase(),
@@ -472,7 +501,6 @@ fun SharedCardSocialMediaIconButton(iconRes: Int, contentDescription: String, ur
     }
 }
 
-// 🔥 **Bağlantı isteği gönderme fonksiyonu**
 fun sendConnectionRequest(
     currentUserId: String?,
     targetUserId: String?,
@@ -485,7 +513,6 @@ fun sendConnectionRequest(
     val firestore = FirebaseFirestore.getInstance()
     val requestData = mapOf("userId" to currentUserId, "cardId" to cardId)
 
-    // Gönderen kullanıcının kartından isim bilgilerini al
     firestore.collection("users").document(currentUserId)
         .collection("cards")
         .limit(1)
@@ -504,7 +531,6 @@ fun sendConnectionRequest(
             } else {
                 android.util.Log.d("ConnectionRequest", "Kullanıcının kartı bulunamadı, users koleksiyonundan deneniyor")
                 
-                // Kart yoksa users koleksiyonundan dene
                 firestore.collection("users").document(currentUserId)
                     .get()
                     .addOnSuccessListener { userDoc ->
@@ -514,18 +540,15 @@ fun sendConnectionRequest(
                         senderSurname = nameParts.getOrNull(1) ?: "Kullanıcı"
                         android.util.Log.d("ConnectionRequest", "Users'dan alınan isim: $senderName $senderSurname")
                         
-                        // Bildirimi gönder
                         sendNotificationWithNames(firestore, targetUserId, cardId, context, senderName, senderSurname, onSuccess)
                     }
                 return@addOnSuccessListener
             }
             
-            // Bildirimi gönder
             sendNotificationWithNames(firestore, targetUserId, cardId, context, senderName, senderSurname, onSuccess)
         }
         .addOnFailureListener { e ->
             android.util.Log.e("ConnectionRequest", "Kart bilgileri alınamadı", e)
-            // Fallback olarak users koleksiyonundan dene
             firestore.collection("users").document(currentUserId)
                 .get()
                 .addOnSuccessListener { userDoc ->
@@ -539,7 +562,6 @@ fun sendConnectionRequest(
         }
 }
 
-// Yardımcı fonksiyon - bildirimi gönder
 private fun sendNotificationWithNames(
     firestore: FirebaseFirestore,
     targetUserId: String,
@@ -553,11 +575,9 @@ private fun sendNotificationWithNames(
     
     android.util.Log.d("ConnectionRequest", "Bildirim gönderiliyor: $senderName $senderSurname")
     
-    // Bağlantı isteğini gönder
     firestore.collection("users").document(targetUserId)
         .update("connectRequests", FieldValue.arrayUnion(requestData))
         .addOnSuccessListener {
-            // Bildirim oluştur
             val notification = Notification(
                 userId = targetUserId,
                 title = context.getString(R.string.new_connection_request),
@@ -566,17 +586,14 @@ private fun sendNotificationWithNames(
                 relatedId = cardId
             )
 
-            // Bildirimi kaydet
             firestore.collection("notifications")
                 .add(notification)
                 .addOnSuccessListener { notificationRef ->
-                    // Kullanıcının bildirimlerini güncelle
                     firestore.collection("users")
                         .document(targetUserId)
                         .update("notifications", FieldValue.arrayUnion(notificationRef.id))
                 }
 
-            // 🔥 Push notification gönder
             CoroutineScope(Dispatchers.IO).launch {
                 try {
                     NotificationManager.sendConnectionRequestNotification(
@@ -586,7 +603,6 @@ private fun sendNotificationWithNames(
                         cardId = cardId
                     )
                 } catch (e: Exception) {
-                    // Push notification gönderilemezse sadece log yazdır, işlemi durdurmaz
                     android.util.Log.e("ConnectionRequest", "Push notification gönderilemedi", e)
                 }
             }
@@ -600,7 +616,6 @@ private fun sendNotificationWithNames(
         }
 }
 
-// 🔥 **Bağlantıyı kaldırma fonksiyonu**
 fun removeConnection(
     currentUserId: String?,
     targetUserId: String?,
@@ -625,7 +640,6 @@ fun removeConnection(
         }
 }
 
-// Bildirim veri sınıfı
 data class Notification(
     val id: String = "",
     val userId: String = "",
@@ -637,7 +651,6 @@ data class Notification(
     val createdAt: Long = System.currentTimeMillis()
 )
 
-// Sosyal medya URL'lerini düzenleme
 fun formatSharedSocialUrl(url: String, domain: String): String {
     return when {
         url.startsWith("http://") || url.startsWith("https://") -> url

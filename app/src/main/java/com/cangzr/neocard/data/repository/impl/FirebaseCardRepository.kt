@@ -12,9 +12,6 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * CardRepository'nin Firebase implementasyonu
- */
 @Singleton
 class FirebaseCardRepository @Inject constructor(
     private val firestore: FirebaseFirestore,
@@ -31,7 +28,6 @@ class FirebaseCardRepository @Inject constructor(
             .collection("cards")
             .limit(pageSize.toLong())
 
-        // Pagination için son karttan sonrasını getir
         if (lastCardId != null) {
             val lastDoc = firestore.collection("users")
                 .document(userId)
@@ -90,7 +86,6 @@ class FirebaseCardRepository @Inject constructor(
     ): Resource<String> = safeApiCall {
         var cardData = card.toMap()
 
-        // Profil resmi varsa yükle
         if (imageUri != null) {
             val imageUrl = uploadProfileImage(userId, imageUri)
             cardData = cardData.toMutableMap().apply {
@@ -98,7 +93,6 @@ class FirebaseCardRepository @Inject constructor(
             }
         }
 
-        // Kartı kaydet
         val cardRef = firestore.collection("users")
             .document(userId)
             .collection("cards")
@@ -107,7 +101,6 @@ class FirebaseCardRepository @Inject constructor(
 
         val cardId = cardRef.id
 
-        // Eğer kart public ise public_cards koleksiyonuna ekle
         if (card.isPublic) {
             val publicCardData = cardData.toMutableMap().apply {
                 put("id", cardId)
@@ -132,7 +125,6 @@ class FirebaseCardRepository @Inject constructor(
     ): Resource<Unit> = safeApiCall {
         var cardData = card.toMap()
 
-        // Yeni profil resmi varsa yükle
         if (imageUri != null) {
             val imageUrl = uploadProfileImage(userId, imageUri)
             cardData = cardData.toMutableMap().apply {
@@ -140,7 +132,6 @@ class FirebaseCardRepository @Inject constructor(
             }
         }
 
-        // Kartı güncelle
         firestore.collection("users")
             .document(userId)
             .collection("cards")
@@ -148,7 +139,6 @@ class FirebaseCardRepository @Inject constructor(
             .set(cardData)
             .await()
 
-        // Public cards koleksiyonunu güncelle
         val publicCardData = cardData.toMutableMap().apply {
             put("userId", userId)
             put("id", cardId)
@@ -166,7 +156,6 @@ class FirebaseCardRepository @Inject constructor(
         cardId: String,
         profileImageUrl: String
     ): Resource<Unit> = safeApiCall {
-        // Kartı sil
         firestore.collection("users")
             .document(userId)
             .collection("cards")
@@ -174,19 +163,16 @@ class FirebaseCardRepository @Inject constructor(
             .delete()
             .await()
 
-        // Public cards'dan sil
         firestore.collection("public_cards")
             .document(cardId)
             .delete()
             .await()
 
-        // Profil resmini storage'dan sil
         if (profileImageUrl.isNotEmpty()) {
             try {
                 val storageRef = storage.getReferenceFromUrl(profileImageUrl)
                 storageRef.delete().await()
             } catch (e: Exception) {
-                // Storage silme hatası önemli değil, devam et
             }
         }
     }
@@ -196,7 +182,6 @@ class FirebaseCardRepository @Inject constructor(
         pageSize: Int,
         lastCardId: String?
     ): Resource<Triple<List<UserCard>, String?, Boolean>> = safeApiCall {
-        // Kullanıcının bağlantılarını al
         val userDoc = firestore.collection("users")
             .document(currentUserId)
             .get()
@@ -205,14 +190,12 @@ class FirebaseCardRepository @Inject constructor(
         val connectedList = userDoc.get("connected") as? List<Map<String, String>> ?: emptyList()
         val connectedCardIds = connectedList.mapNotNull { it["cardId"] }.toSet()
 
-        // Rastgele sıralama için daha fazla kart çek
         val queryLimit = if (lastCardId == null) (pageSize * 5).toLong() else pageSize.toLong()
 
         var query = firestore.collection("public_cards")
             .whereEqualTo("isPublic", true)
             .limit(queryLimit)
 
-        // Pagination
         if (lastCardId != null) {
             val lastDoc = firestore.collection("public_cards")
                 .document(lastCardId)
@@ -230,19 +213,16 @@ class FirebaseCardRepository @Inject constructor(
 
         val querySnapshot = query.get().await()
 
-        // Kullanıcının kendi kartlarını ve bağlantılarını filtrele
         val filteredDocs = querySnapshot.documents.filter { doc ->
             val userId = doc.getString("userId") ?: ""
             val cardId = doc.id
             userId.isNotEmpty() && userId != currentUserId && !connectedCardIds.contains(cardId)
         }
 
-        // Kartları parse et
         val cards = filteredDocs.mapNotNull { doc ->
             try {
                 val userId = doc.getString("userId") ?: return@mapNotNull null
 
-                // Asıl kartı kullanıcının koleksiyonundan al
                 val cardDoc = firestore.collection("users")
                     .document(userId)
                     .collection("cards")
@@ -260,7 +240,6 @@ class FirebaseCardRepository @Inject constructor(
             }
         }
 
-        // İlk yüklemede shuffle yap
         val finalCards = if (lastCardId == null) {
             cards.shuffled().take(pageSize)
         } else {
@@ -287,7 +266,6 @@ class FirebaseCardRepository @Inject constructor(
 
         val userId = publicDoc.getString("userId") ?: return@safeApiCall null
 
-        // Asıl kartı kullanıcının koleksiyonundan al
         val cardDoc = firestore.collection("users")
             .document(userId)
             .collection("cards")
@@ -302,9 +280,6 @@ class FirebaseCardRepository @Inject constructor(
         }
     }
 
-    /**
-     * Profil resmini Firebase Storage'a yükler
-     */
     private suspend fun uploadProfileImage(userId: String, imageUri: Uri): String {
         val filename = "profile_${userId}_${System.currentTimeMillis()}.jpg"
         val storageRef = storage.reference.child("user_uploads/$userId/$filename")
@@ -313,50 +288,12 @@ class FirebaseCardRepository @Inject constructor(
         return storageRef.downloadUrl.await().toString()
     }
 
-    /**
-     * Firestore document'ını UserCard objesine parse eder
-     */
     private fun parseUserCard(cardId: String, data: Map<String, Any?>?): UserCard? {
         if (data == null) return null
 
         try {
-            // Text styles'ı parse et
-            val textStylesMap = data["textStyles"] as? Map<String, Any>
-            val parsedTextStyles = textStylesMap?.mapValues { (_, value) ->
-                val styleMap = value as? Map<String, Any> ?: return@mapValues null
-                TextStyleDTO(
-                    isBold = styleMap["isBold"] as? Boolean ?: false,
-                    isItalic = styleMap["isItalic"] as? Boolean ?: false,
-                    isUnderlined = styleMap["isUnderlined"] as? Boolean ?: false,
-                    fontSize = (styleMap["fontSize"] as? Number)?.toFloat() ?: 16f,
-                    color = styleMap["color"] as? String ?: "#000000"
-                )
-            }?.filterValues { it != null }?.mapValues { it.value!! } ?: emptyMap()
-
-            return UserCard(
-                id = cardId,
-                name = data["name"] as? String ?: "",
-                surname = data["surname"] as? String ?: "",
-                phone = data["phone"] as? String ?: "",
-                email = data["email"] as? String ?: "",
-                company = data["company"] as? String ?: "",
-                title = data["title"] as? String ?: "",
-                website = data["website"] as? String ?: "",
-                linkedin = data["linkedin"] as? String ?: "",
-                instagram = data["instagram"] as? String ?: "",
-                twitter = data["twitter"] as? String ?: "",
-                facebook = data["facebook"] as? String ?: "",
-                github = data["github"] as? String ?: "",
-                bio = data["bio"] as? String ?: "",
-                cv = data["cv"] as? String ?: "",
-                backgroundType = data["backgroundType"] as? String ?: "SOLID",
-                backgroundColor = data["backgroundColor"] as? String ?: "#FFFFFF",
-                selectedGradient = data["selectedGradient"] as? String ?: "Sunset",
-                profileImageUrl = data["profileImageUrl"] as? String ?: "",
-                cardType = data["cardType"] as? String ?: "Genel",
-                textStyles = parsedTextStyles,
-                isPublic = data["isPublic"] as? Boolean ?: true
-            )
+            val nonNullData = data.mapValues { (_, value) -> value ?: "" }
+            return UserCard.fromMap(cardId, nonNullData as Map<String, Any>)
         } catch (e: Exception) {
             return null
         }

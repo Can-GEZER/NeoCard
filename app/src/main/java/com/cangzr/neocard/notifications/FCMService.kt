@@ -33,7 +33,6 @@ class FCMService : FirebaseMessagingService() {
         super.onNewToken(token)
         Log.d(TAG, "Yeni FCM token: $token")
         
-        // Token'ı Firestore'a kaydet
         saveTokenToFirestore(token)
     }
 
@@ -42,7 +41,6 @@ class FCMService : FirebaseMessagingService() {
         
         Log.d(TAG, "Mesaj alındı: ${remoteMessage.from}")
         
-        // Notification payload'ı kontrol et
         remoteMessage.notification?.let { notification ->
             val title = notification.title ?: "NeoCard"
             val body = notification.body ?: ""
@@ -51,7 +49,6 @@ class FCMService : FirebaseMessagingService() {
             showNotification(title, body, type, remoteMessage.data)
         }
         
-        // Data payload'ı kontrol et
         if (remoteMessage.data.isNotEmpty()) {
             Log.d(TAG, "Mesaj data payload: ${remoteMessage.data}")
             
@@ -82,11 +79,9 @@ class FCMService : FirebaseMessagingService() {
     private fun showNotification(title: String, body: String, type: String, data: Map<String, String>) {
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         
-        // Intent oluştur - notification'a tıklandığında açılacak ekran
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             
-            // Notification tipine göre farklı ekranlara yönlendir
             when (type) {
                 "CONNECTION_REQUEST" -> {
                     putExtra("navigate_to", "connection_requests")
@@ -103,7 +98,6 @@ class FCMService : FirebaseMessagingService() {
                 }
             }
             
-            // Ek data'ları intent'e ekle
             data.forEach { (key, value) ->
                 putExtra(key, value)
             }
@@ -116,7 +110,6 @@ class FCMService : FirebaseMessagingService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         
-        // Notification builder
         val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.logo3)
             .setContentTitle(title)
@@ -126,7 +119,6 @@ class FCMService : FirebaseMessagingService() {
             .setContentIntent(pendingIntent)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
         
-        // Notification tipine göre özel ayarlar
         when (type) {
             "CONNECTION_REQUEST" -> {
                 notificationBuilder.setColor(getColor(R.color.purple_500))
@@ -139,7 +131,6 @@ class FCMService : FirebaseMessagingService() {
             }
         }
         
-        // Notification'ı göster
         val notificationId = System.currentTimeMillis().toInt()
         notificationManager.notify(notificationId, notificationBuilder.build())
     }

@@ -53,7 +53,6 @@ fun UserCardDialog(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Başlık
             Text(
                 text = context.getString(R.string.card_actions),
                 style = MaterialTheme.typography.titleLarge,
@@ -63,12 +62,10 @@ fun UserCardDialog(
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Butonlar - Alt alta
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Detayları Gör Butonu
                 Button(
                     onClick = onViewDetails,
                     modifier = Modifier.fillMaxWidth(),
@@ -88,7 +85,6 @@ fun UserCardDialog(
                     )
                 }
                 
-                // Paylaş Butonu
                 Button(
                     onClick = onShare,
                     modifier = Modifier.fillMaxWidth(),
@@ -111,7 +107,6 @@ fun UserCardDialog(
             
             Spacer(modifier = Modifier.height(12.dp))
             
-            // Kapat Butonu
             Button(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth(),

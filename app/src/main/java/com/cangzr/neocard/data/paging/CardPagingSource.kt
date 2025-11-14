@@ -6,12 +6,6 @@ import com.cangzr.neocard.common.Resource
 import com.cangzr.neocard.data.model.UserCard
 import com.cangzr.neocard.data.repository.CardRepository
 
-/**
- * PagingSource for loading user cards with pagination
- * 
- * @param userId User ID whose cards to load
- * @param cardRepository Repository to fetch cards from
- */
 class CardPagingSource(
     private val userId: String,
     private val cardRepository: CardRepository
@@ -22,7 +16,6 @@ class CardPagingSource(
             val pageSize = params.loadSize
             val lastCardId = params.key
             
-            // Call repository to get cards
             when (val result = cardRepository.getCards(
                 userId = userId,
                 pageSize = pageSize,
@@ -41,7 +34,6 @@ class CardPagingSource(
                     LoadResult.Error(result.exception)
                 }
                 is Resource.Loading -> {
-                    // Should not happen in this context
                     LoadResult.Error(Exception("Unexpected loading state"))
                 }
             }
@@ -51,7 +43,6 @@ class CardPagingSource(
     }
 
     override fun getRefreshKey(state: PagingState<String, UserCard>): String? {
-        // Return null to always start from the beginning on refresh
         return null
     }
 }

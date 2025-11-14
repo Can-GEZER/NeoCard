@@ -51,7 +51,6 @@ fun ExpandableStatisticsHeader(
         Column(
             modifier = Modifier.fillMaxWidth()
         ) {
-            // Başlık ve ok ikonu
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -87,7 +86,6 @@ fun ExpandableStatisticsHeader(
                 )
             }
             
-            // Animasyonlu içerik
             AnimatedVisibility(
                 visible = isExpanded,
                 enter = fadeIn() + expandVertically(),

@@ -5,10 +5,6 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.cangzr.neocard.storage.FirebaseStorageManager
 
-/**
- * Kullanılmayan resimleri periyodik olarak temizleyen WorkManager worker sınıfı.
- * Bu worker, 7 günden eski ve hiçbir kartvizitte veya iş ilanında kullanılmayan resimleri siler.
- */
 class StorageCleanupWorker(
     context: Context,
     workerParams: WorkerParameters
@@ -20,7 +16,6 @@ class StorageCleanupWorker(
             storageManager.cleanUnusedImages()
             Result.success()
         } catch (e: Exception) {
-            // Hata durumunda tekrar dene
             Result.retry()
         }
     }

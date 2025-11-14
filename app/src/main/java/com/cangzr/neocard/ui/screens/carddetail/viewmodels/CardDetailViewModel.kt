@@ -22,7 +22,6 @@ class CardDetailViewModel @Inject constructor(
     private val firestore: FirebaseFirestore
 ) : ViewModel() {
     
-    // State variables
     private val _userCard = MutableStateFlow<UserCard?>(null)
     val userCard: StateFlow<UserCard?> = _userCard
     
@@ -41,7 +40,6 @@ class CardDetailViewModel @Inject constructor(
     private val _isLoadingStats = MutableStateFlow(false)
     val isLoadingStats: StateFlow<Boolean> = _isLoadingStats
     
-    // Form state
     private val _name = MutableStateFlow("")
     val name: StateFlow<String> = _name
     
@@ -84,7 +82,6 @@ class CardDetailViewModel @Inject constructor(
     private val _cv = MutableStateFlow("")
     val cv: StateFlow<String> = _cv
     
-    // Error states
     private val _nameError = MutableStateFlow<String?>(null)
     val nameError: StateFlow<String?> = _nameError
     
@@ -110,7 +107,6 @@ class CardDetailViewModel @Inject constructor(
                     val card = document.toObject(UserCard::class.java)?.copy(id = document.id)
                     _userCard.value = card
                     
-                    // Update form state
                     card?.let {
                         _name.value = it.name
                         _surname.value = it.surname
@@ -257,7 +253,6 @@ class CardDetailViewModel @Inject constructor(
                     .document(cardId)
                     .set(card)
                     .addOnSuccessListener {
-                        // Update public cards collection
                         val publicCardData = card.toMap().toMutableMap().apply {
                             put("userId", user.uid)
                             put("id", cardId)
@@ -289,7 +284,6 @@ class CardDetailViewModel @Inject constructor(
         _isDeleting.value = true
         val currentUser = auth.currentUser
         currentUser?.let { user ->
-            // Get card info first for image URL
             firestore.collection("users")
                 .document(user.uid)
                 .collection("cards")
@@ -298,14 +292,12 @@ class CardDetailViewModel @Inject constructor(
                 .addOnSuccessListener { cardDoc ->
                     val profileImageUrl = cardDoc.getString("profileImageUrl") ?: ""
                     
-                    // Delete from user's cards
                     firestore.collection("users")
                         .document(user.uid)
                         .collection("cards")
                         .document(cardId)
                         .delete()
                         .addOnSuccessListener {
-                            // Delete from public cards
                             firestore.collection("public_cards")
                                 .document(cardId)
                                 .delete()

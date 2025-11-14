@@ -53,7 +53,6 @@ object ConnectionUtils {
         }
     }
     
-    // Bağlantı isteğini kabul etme fonksiyonu
     fun acceptConnectionRequest(
         currentUserId: String?,
         requestUserId: String?,
@@ -74,22 +73,17 @@ object ConnectionUtils {
             val currentConnected = currentUserSnapshot.get("connected") as? MutableList<Map<String, String>> ?: mutableListOf()
             val requestUserConnected = requestUserSnapshot.get("connected") as? MutableList<Map<String, String>> ?: mutableListOf()
 
-            // İsteği kaldır
             currentRequests.removeAll { it["userId"] == requestUserId && it["cardId"] == cardId }
 
-            // Bağlantıyı ekle
             currentConnected.add(mapOf("userId" to requestUserId, "cardId" to cardId))
             requestUserConnected.add(mapOf("userId" to currentUserId, "cardId" to cardId))
 
-            // Güncelle
             transaction.update(currentUserRef, "connectRequests", currentRequests)
             transaction.update(currentUserRef, "connected", currentConnected)
             transaction.update(requestUserRef, "connected", requestUserConnected)
         }.addOnSuccessListener {
-            // Bağlantı kabul bildirimi gönder
             CoroutineScope(Dispatchers.IO).launch {
                 try {
-                    // Kabul eden kullanıcının ilk kartından isim bilgisini al
                     val accepterCardsSnapshot = firestore.collection("users")
                         .document(currentUserId)
                         .collection("cards")
@@ -106,7 +100,6 @@ object ConnectionUtils {
                         accepterSurname = firstCard.getString("surname") ?: ""
                     }
                     
-                    // Eğer kartta bilgi bulunamazsa, displayName'den al
                     if (accepterName.isEmpty() && accepterSurname.isEmpty()) {
                         val accepterUserSnapshot = currentUserRef.get().await()
                         val displayName = accepterUserSnapshot.getString("displayName") ?: "Kullanıcı"
@@ -115,7 +108,6 @@ object ConnectionUtils {
                         accepterSurname = nameParts.getOrNull(1) ?: ""
                     }
                     
-                    // Bildirim gönder
                     NotificationManager.sendConnectionAcceptedNotification(
                         targetUserId = requestUserId,
                         accepterUserId = currentUserId,
@@ -131,12 +123,10 @@ object ConnectionUtils {
             
             onComplete()
         }.addOnFailureListener {
-            // Hata durumunda da callback'i çağır
             onComplete()
         }
     }
     
-    // Bağlantı isteğini reddetme fonksiyonu
     fun rejectConnectionRequest(
         currentUserId: String?,
         requestUserId: String?,
@@ -152,15 +142,12 @@ object ConnectionUtils {
             val currentUserSnapshot = transaction.get(currentUserRef)
             val currentRequests = currentUserSnapshot.get("connectRequests") as? MutableList<Map<String, String>> ?: mutableListOf()
 
-            // İsteği kaldır
             currentRequests.removeAll { it["userId"] == requestUserId && it["cardId"] == cardId }
 
-            // Güncelle
             transaction.update(currentUserRef, "connectRequests", currentRequests)
         }.addOnSuccessListener {
             onComplete()
         }.addOnFailureListener {
-            // Hata durumunda da callback'i çağır
             onComplete()
         }
     }

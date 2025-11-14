@@ -62,12 +62,10 @@ fun UserCardItem(card: UserCard, onClick: () -> Unit) {
                 verticalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth().fillMaxSize()
             ) {
-                // Üst kısım: Profil resmi + Bilgiler
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.Top
                 ) {
-                    // Profil resmi (varsa göster)
                     if (card.profileImageUrl!!.isNotEmpty()) {
                         AsyncImage(
                             model = ImageRequest.Builder(context)
@@ -88,7 +86,6 @@ fun UserCardItem(card: UserCard, onClick: () -> Unit) {
                         )
                     }
 
-                    // Bilgiler
                     Column(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                         modifier = Modifier.weight(1f)
@@ -101,7 +98,6 @@ fun UserCardItem(card: UserCard, onClick: () -> Unit) {
                     }
                 }
 
-                // Alt kısım: Sosyal Medya İkonları (sola hizalı)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -130,10 +126,8 @@ fun SocialIcon(iconRes: Int, color: Color) {
 
 fun parseBackground(card: UserCard, context: android.content.Context): Brush {
     return if (card.backgroundType == "GRADIENT") {
-        // Önce mevcut dilde eşleşme ara
         var gradient = CardCreationUtils.getPredefinedGradients(context).firstOrNull { it.first == card.selectedGradient }
         
-        // Eğer bulunamazsa, diğer dillerde ara
         if (gradient == null) {
             val allGradients = listOf(
                 Pair("Gün Batımı", Brush.horizontalGradient(listOf(Color(0xFFFE6B8B), Color(0xFFFF8E53)))),

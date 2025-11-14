@@ -42,7 +42,6 @@ fun CardStatisticsScreen(
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
 
-    // Günleri temsil eden liste (bugünden geriye doğru 7 gün)
     val dayLabels = remember {
         val dateFormat = SimpleDateFormat("dd MMM", Locale.getDefault())
         val calendar = Calendar.getInstance()
@@ -52,7 +51,6 @@ fun CardStatisticsScreen(
         }.reversed()
     }
 
-    // İstatistikleri yükle
     LaunchedEffect(cardId) {
         loadStatistics(analyticsManager, cardId, context) { stats, errorMsg ->
             statistics = stats
@@ -147,13 +145,10 @@ fun CardStatisticsScreen(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
-                    // Özet İstatistikler
                     StatisticsSummarySection(statistics!!)
                     
-                    // Görüntülenme Grafiği
                     ViewsChartSection(statistics!!, dayLabels)
                     
-                    // Etkileşim Detayları
                     InteractionDetailsSection(statistics!!)
                 }
             }
@@ -286,7 +281,6 @@ fun ViewsChartSection(statistics: CardStatistics, dayLabels: List<String>) {
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Görüntülenme grafiği
             val weeklyViews = statistics.weeklyViews.reversed() // Son günden ilk güne sıralı
             val maxViews = weeklyViews.maxOrNull() ?: 1L
             
@@ -296,13 +290,11 @@ fun ViewsChartSection(statistics: CardStatistics, dayLabels: List<String>) {
                     .height(200.dp)
                     .padding(bottom = 32.dp) // Gün etiketleri için alan
             ) {
-                // Çizgili arka plan
                 Canvas(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     val dashPathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
                     
-                    // Yatay çizgiler
                     val lineCount = 5
                     for (i in 0..lineCount) {
                         val y = size.height * (1 - i.toFloat() / lineCount)
@@ -315,7 +307,6 @@ fun ViewsChartSection(statistics: CardStatistics, dayLabels: List<String>) {
                     }
                 }
                 
-                // Çubuk grafik
                 Row(
                     modifier = Modifier.fillMaxSize(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
@@ -343,7 +334,6 @@ fun ViewsChartSection(statistics: CardStatistics, dayLabels: List<String>) {
                             
                             Spacer(modifier = Modifier.height(8.dp))
                             
-                            // Gün etiketi
                             Text(
                                 text = dayLabels[index],
                                 style = MaterialTheme.typography.bodySmall,
@@ -351,7 +341,6 @@ fun ViewsChartSection(statistics: CardStatistics, dayLabels: List<String>) {
                                 fontSize = 10.sp
                             )
                             
-                            // Görüntülenme sayısı
                             Text(
                                 text = "$views",
                                 style = MaterialTheme.typography.bodySmall,
@@ -390,7 +379,6 @@ fun InteractionDetailsSection(statistics: CardStatistics) {
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Link tıklamaları
             if (statistics.linkClicksByType.isNotEmpty()) {
                 Text(
                     text = context.getString(R.string.link_clicks),
@@ -457,7 +445,6 @@ fun InteractionDetailsSection(statistics: CardStatistics) {
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Paylaşım detayları
             if (statistics.sharesByMethod.isNotEmpty()) {
                 Text(
                     text = context.getString(R.string.share_details),

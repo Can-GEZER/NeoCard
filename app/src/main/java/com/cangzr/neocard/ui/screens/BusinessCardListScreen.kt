@@ -48,7 +48,6 @@ data class CardWithTags(
     val tags: List<String> = emptyList()
 )
 
-// Önceden tanımlanmış etiketler
 data class TagCategory(
     val name: String,
     val tags: List<String>
@@ -129,7 +128,6 @@ fun BusinessCardListScreen(navController: NavHostController) {
     val context = LocalContext.current
     val adManager = remember { AdManager.getInstance(context) }
 
-    // Tüm etiketleri ve kullanım sayılarını topla
     val allTagsWithCount = remember(userCards) {
         userCards.flatMap { it.tags }
             .groupingBy { it }
@@ -138,11 +136,9 @@ fun BusinessCardListScreen(navController: NavHostController) {
             .sortedBy { it.first }
     }
 
-    // Filtrelenmiş kartları hesapla
     val filteredCards = remember(userCards, searchQuery, selectedTags) {
         var filtered = userCards
 
-        // Metin araması
         if (searchQuery.isNotEmpty()) {
             filtered = filtered.filter { cardWithTags ->
                 val card = cardWithTags.card
@@ -155,7 +151,6 @@ fun BusinessCardListScreen(navController: NavHostController) {
             }
         }
 
-        // Etiket filtreleme
         if (selectedTags.isNotEmpty()) {
             filtered = filtered.filter { cardWithTags ->
                 selectedTags.all { tag -> cardWithTags.tags.contains(tag) }
@@ -165,7 +160,6 @@ fun BusinessCardListScreen(navController: NavHostController) {
         filtered
     }
 
-    // Sayfalama için değişkenler
     var allConnectedList by remember { mutableStateOf<List<Map<String, String>>>(emptyList()) }
     var currentPage by remember { mutableStateOf(0) }
     val pageSize = 10
@@ -173,7 +167,6 @@ fun BusinessCardListScreen(navController: NavHostController) {
     var isLoadingMore by remember { mutableStateOf(false) }
     var userTagsMap by remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) }
     
-    // İlk veri yüklemesi
     LaunchedEffect(currentUser) {
         if (currentUser == null) {
             userCards = emptyList()
@@ -184,7 +177,6 @@ fun BusinessCardListScreen(navController: NavHostController) {
                     val connectedList = document.get("connected") as? List<Map<String, String>> ?: emptyList()
                     val userTags = document.get("cardTags") as? Map<String, List<String>> ?: emptyMap()
                     
-                    // Tüm bağlantı listesini ve etiketleri sakla
                     allConnectedList = connectedList
                     userTagsMap = userTags
 
@@ -193,14 +185,12 @@ fun BusinessCardListScreen(navController: NavHostController) {
                         isLoading = false
                         hasMoreCards = false
                     } else {
-                        // İlk sayfayı yükle
                         fetchConnectedCards(
                             connectedList = connectedList, 
                             userTags = userTags, 
                             onComplete = { cardsWithTags ->
                                 userCards = cardsWithTags
                                 isLoading = false
-                                // Daha fazla kart olup olmadığını kontrol et
                                 hasMoreCards = (pageSize * (currentPage + 1)) < connectedList.size
                                 currentPage = 1
                             },
@@ -217,7 +207,6 @@ fun BusinessCardListScreen(navController: NavHostController) {
         }
     }
     
-    // Daha fazla kart yükleme fonksiyonu
     fun loadMoreCards() {
         if (!hasMoreCards || isLoadingMore || currentUser == null) return
         
@@ -228,7 +217,6 @@ fun BusinessCardListScreen(navController: NavHostController) {
             connectedList = allConnectedList,
             userTags = userTagsMap,
             onComplete = { newCards ->
-                // Mevcut kartlara yeni kartları ekle
                 userCards = userCards + newCards
                 isLoadingMore = false
             },
@@ -236,11 +224,9 @@ fun BusinessCardListScreen(navController: NavHostController) {
             startIndex = startIndex
         )
         currentPage++
-        // Daha fazla kart olup olmadığını kontrol et
         hasMoreCards = (pageSize * currentPage) < allConnectedList.size
     }
 
-    // Etiket seçim dialog'u
     if (showTagSelectionDialog != null) {
         var tagSearchQuery by remember { mutableStateOf("") }
         val predefinedCategories = getPredefinedTagCategories(context)
@@ -418,7 +404,6 @@ fun BusinessCardListScreen(navController: NavHostController) {
                 modifier = Modifier.padding(vertical = 16.dp)
             )
 
-            // Arama çubuğu
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -439,7 +424,6 @@ fun BusinessCardListScreen(navController: NavHostController) {
                 )
             )
 
-            // Etiket filtreleme
             if (allTagsWithCount.isNotEmpty()) {
                 Text(
                     text = context.getString(R.string.filter_by_tags),
@@ -525,7 +509,6 @@ fun BusinessCardListScreen(navController: NavHostController) {
                     )
                 }
             } else {
-                // withAdItems kullanarak reklamlı öğeleri oluşturalım
                 val adInterval = AdManager.BUSINESS_CARD_AD_INTERVAL
                 val itemsWithAds = withAdItems(
                     items = filteredCards,
@@ -536,7 +519,6 @@ fun BusinessCardListScreen(navController: NavHostController) {
                                 navController.navigate(Screen.SharedCardDetail.createRoute(cardWithTags.card.id))
                             }
                             
-                            // Etiket rozeti
                             if (cardWithTags.tags.isNotEmpty()) {
                                 Surface(
                                     modifier = Modifier
@@ -567,7 +549,6 @@ fun BusinessCardListScreen(navController: NavHostController) {
                             }
                         }
                         
-                        // Etiket ekleme butonu
                         TextButton(
                             onClick = { showTagSelectionDialog = cardWithTags },
                             modifier = Modifier.padding(horizontal = 8.dp)
@@ -598,7 +579,6 @@ fun BusinessCardListScreen(navController: NavHostController) {
                     items(itemsWithAds.size) { index ->
                         itemsWithAds[index]()
                         
-                        // Son öğeye yaklaşıldığında daha fazla yükle
                         if (index == itemsWithAds.size - 3 && hasMoreCards && !isLoadingMore) {
                             LaunchedEffect(index) {
                                 loadMoreCards()
@@ -606,7 +586,6 @@ fun BusinessCardListScreen(navController: NavHostController) {
                         }
                     }
                     
-                    // Yükleme göstergesi
                     if (isLoadingMore) {
                         item {
                             Box(
@@ -644,7 +623,6 @@ fun fetchConnectedCards(
         return
     }
 
-    // Sayfalama için başlangıç ve bitiş indekslerini hesapla
     val endIndex = minOf(startIndex + pageSize, connectedList.size)
     val currentPageConnections = connectedList.subList(startIndex, endIndex)
 
@@ -708,12 +686,10 @@ fun UserCardItem(card: UserCard, onClick: () -> Unit) {
                 verticalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier.fillMaxWidth().fillMaxSize()
             ) {
-                // Üst kısım: Profil resmi + Bilgiler
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.Top
                 ) {
-                    // Profil resmi (varsa göster)
                     if (card.profileImageUrl!!.isNotEmpty()) {
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
@@ -734,7 +710,6 @@ fun UserCardItem(card: UserCard, onClick: () -> Unit) {
                         )
                     }
 
-                    // Bilgiler
                     Column(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                         modifier = Modifier.weight(1f)
@@ -747,7 +722,6 @@ fun UserCardItem(card: UserCard, onClick: () -> Unit) {
                     }
                 }
 
-                // Alt kısım: Sosyal Medya İkonları (sola hizalı)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -776,10 +750,8 @@ fun BusinessSocialIcon(iconRes: Int, color: Color) {
 
 fun parseBusinessBackground(card: UserCard, context: Context): Brush {
     return if (card.backgroundType == "GRADIENT") {
-        // Önce mevcut dilde eşleşme ara
         var gradient = CardCreationUtils.getPredefinedGradients(context).firstOrNull { it.first == card.selectedGradient }
         
-        // Eğer bulunamazsa, diğer dillerde ara
         if (gradient == null) {
             val allGradients = listOf(
                 Pair("Gün Batımı", Brush.horizontalGradient(listOf(Color(0xFFFE6B8B), Color(0xFFFF8E53)))),

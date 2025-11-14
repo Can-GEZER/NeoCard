@@ -62,7 +62,6 @@ fun OnboardingScreen(navController: NavHostController) {
     
     var currentPage by remember { mutableStateOf(0) }
     
-    // Onboarding sayfaları
     val pages = listOf(
         OnboardingPage(
             title = stringResource(R.string.onboarding_title_1),
@@ -81,7 +80,6 @@ fun OnboardingScreen(navController: NavHostController) {
         )
     )
     
-    // Onboarding tamamlandı işlemi
     fun finishOnboarding() {
         coroutineScope.launch {
             onboardingPreferences.setOnboardingCompleted(true)
@@ -96,7 +94,6 @@ fun OnboardingScreen(navController: NavHostController) {
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Onboarding içeriği
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -104,7 +101,6 @@ fun OnboardingScreen(navController: NavHostController) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Sayfa içeriği
             AnimatedVisibility(
                 visible = true,
                 enter = fadeIn(animationSpec = tween(600)) + slideInHorizontally(),
@@ -115,7 +111,6 @@ fun OnboardingScreen(navController: NavHostController) {
                     verticalArrangement = Arrangement.Center,
                     modifier = Modifier.weight(1f)
                 ) {
-                    // Resim
                     Image(
                         painter = painterResource(id = pages[currentPage].imageRes),
                         contentDescription = null,
@@ -126,7 +121,6 @@ fun OnboardingScreen(navController: NavHostController) {
                     
                     Spacer(modifier = Modifier.height(32.dp))
                     
-                    // Başlık
                     Text(
                         text = pages[currentPage].title,
                         fontSize = 24.sp,
@@ -137,7 +131,6 @@ fun OnboardingScreen(navController: NavHostController) {
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
-                    // Açıklama
                     Text(
                         text = pages[currentPage].description,
                         fontSize = 16.sp,
@@ -148,14 +141,12 @@ fun OnboardingScreen(navController: NavHostController) {
                 }
             }
             
-            // Alt kısım - İndikatörler ve butonlar
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Sayfa indikatörleri
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center
@@ -176,13 +167,11 @@ fun OnboardingScreen(navController: NavHostController) {
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 
-                // Butonlar
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Atla butonu
                     TextButton(onClick = { finishOnboarding() }) {
                         Text(
                             text = stringResource(R.string.skip),
@@ -190,7 +179,6 @@ fun OnboardingScreen(navController: NavHostController) {
                         )
                     }
                     
-                    // İleri / Başla butonu
                     Button(
                         onClick = {
                             if (currentPage < pages.size - 1) {
@@ -221,9 +209,6 @@ fun OnboardingScreen(navController: NavHostController) {
     }
 }
 
-/**
- * Onboarding sayfası veri sınıfı
- */
 data class OnboardingPage(
     val title: String,
     val description: String,

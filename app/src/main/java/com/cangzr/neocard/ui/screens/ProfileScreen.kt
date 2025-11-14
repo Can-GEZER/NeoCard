@@ -37,6 +37,7 @@ import com.cangzr.neocard.ui.screens.profile.components.PremiumCard
 import com.cangzr.neocard.ui.screens.profile.components.ProfileCard
 import com.cangzr.neocard.ui.screens.profile.components.PromoCodeCard
 import com.cangzr.neocard.ui.screens.profile.components.PromoCodeRedeemCard
+import com.cangzr.neocard.ui.screens.profile.components.ReferralCard
 import com.cangzr.neocard.ui.screens.profile.components.SettingsAndActionsCard
 import com.cangzr.neocard.ui.screens.profile.utils.BottomSheetContent
 import com.cangzr.neocard.ui.screens.profile.utils.DeleteAccountDialog
@@ -54,23 +55,19 @@ fun ProfileScreen(navController: NavHostController) {
     val firestore = FirebaseFirestore.getInstance()
     val billingManager = remember { BillingManager.getInstance(context) }
     
-    // Premium status
     val isPremium by billingManager.isPremium.collectAsState()
     viewModel.updatePremiumStatus(isPremium)
     
-    // Promo code states
     var promoCodeList by remember { mutableStateOf<List<PromoCode>>(emptyList()) }
     var hasConnectRequests by remember { mutableStateOf(false) }
     var isAdmin by remember { mutableStateOf(false) }
 
-    // Settings states
     var selectedOption by remember { mutableStateOf<String?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     val currentLanguage = remember { LanguageManager.getSelectedLanguage(context) }
     var selectedLanguage by remember { mutableStateOf(currentLanguage) }
 
-    // Load promo codes
     LaunchedEffect(Unit) {
         val currentUser = auth.currentUser
         if (currentUser != null) {
@@ -96,7 +93,6 @@ fun ProfileScreen(navController: NavHostController) {
         }
     }
 
-    // Check for connection requests
     LaunchedEffect(Unit) {
     val currentUser = auth.currentUser
         if (currentUser != null) {
@@ -110,20 +106,17 @@ fun ProfileScreen(navController: NavHostController) {
         }
     }
 
-    // Check if user is admin
     LaunchedEffect(Unit) {
     val currentUser = auth.currentUser
         isAdmin = UserUtils.isAdmin(currentUser?.uid)
     }
 
-    // Bottom sheet content
     selectedOption?.let {
         BottomSheetContent(it) {
             selectedOption = null
         }
     }
 
-    // Delete account dialog
     if (showDeleteDialog) {
         DeleteAccountDialog(
             showDialog = true,
@@ -133,7 +126,6 @@ fun ProfileScreen(navController: NavHostController) {
                 UserUtils.deleteAccount(context) { success: Boolean, message: String ->
                     Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                     if (success) {
-                        // Hesap silindikten sonra auth ekranına yönlendir
                         navController.navigate("auth") {
                             popUpTo(0) { inclusive = true }
                         }
@@ -143,7 +135,6 @@ fun ProfileScreen(navController: NavHostController) {
         )
     }
     
-    // Language selection dialog
     if (showLanguageDialog) {
         AlertDialog(
             onDismissRequest = { showLanguageDialog = false },
@@ -153,7 +144,6 @@ fun ProfileScreen(navController: NavHostController) {
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Turkish option
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -169,7 +159,6 @@ fun ProfileScreen(navController: NavHostController) {
                         Text(text = context.getString(R.string.language_turkish))
                     }
                     
-                    // English option
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -185,7 +174,6 @@ fun ProfileScreen(navController: NavHostController) {
                         Text(text = context.getString(R.string.language_english))
                     }
                     
-                    // System default option
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -205,11 +193,9 @@ fun ProfileScreen(navController: NavHostController) {
             confirmButton = {
                 TextButton(
                     onClick = {
-                        // Apply language change
                         LanguageManager.setLanguage(context, selectedLanguage)
                         showLanguageDialog = false
                         
-                        // Restart the activity to apply changes
                         val activity = context as? Activity
                         activity?.let {
                             val intent = it.intent
@@ -236,23 +222,20 @@ fun ProfileScreen(navController: NavHostController) {
             .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-        // Profile Card
         ProfileCard(navController = navController)
 
-        // Premium Card
         if (!isPremium) {
             PremiumCard()
         }
 
-        // Connection Requests Section - Her zaman göster
         ConnectionRequestsSection(navController = navController)
 
-        // Promo Code Redeem Card
+        ReferralCard()
+
         PromoCodeRedeemCard(
             onRedeemCode = { code ->
                 val currentUser = auth.currentUser
                 if (currentUser != null) {
-                    // Promosyon kodunu kontrol et
                     firestore.collection("promoCodes")
                         .whereEqualTo("code", code)
                         .whereEqualTo("isActive", true)
@@ -269,7 +252,6 @@ fun ProfileScreen(navController: NavHostController) {
                             val usedCount = (promoDoc.get("usedCount") as? Long)?.toInt() ?: 0
                             val usedBy = (promoDoc.get("usedBy") as? List<String>) ?: emptyList()
                             
-                            // Kullanıcı daha önce bu kodu kullanmış mı kontrol et
                             if (currentUser.uid in usedBy) {
                                 Toast.makeText(context, "Bu promosyon kodunu daha önce kullanmışsınız", Toast.LENGTH_SHORT).show()
                                 return@addOnSuccessListener
@@ -280,7 +262,6 @@ fun ProfileScreen(navController: NavHostController) {
                                 return@addOnSuccessListener
                             }
                             
-                            // Kullanıcının daha önce premium olup olmadığını kontrol et
                             firestore.collection("users")
                                 .document(currentUser.uid)
                                 .get()
@@ -290,15 +271,12 @@ fun ProfileScreen(navController: NavHostController) {
                                     val isCurrentlyPremium = userDoc.getBoolean("premium") ?: false
                                     
                                     val success = if (isCurrentlyPremium && currentEndTime > currentTime) {
-                                        // Mevcut premium süresine ekle
                                         billingManager.extendPremiumWithPromoCode(currentUser.uid, 7 * 24 * 60 * 60 * 1000L)
                                     } else {
-                                        // Yeni premium başlat
                                         billingManager.setPremiumWithPromoCode(currentUser.uid, 7 * 24 * 60 * 60 * 1000L)
                                     }
                                     
                                     if (success) {
-                                        // Promosyon kodunun kullanım sayısını artır ve kullanıcıyı listeye ekle
                                         val newUsedCount = usedCount + 1
                                         val newUsedBy = usedBy + currentUser.uid
                                         
@@ -309,7 +287,6 @@ fun ProfileScreen(navController: NavHostController) {
                                             )
                                         )
                                         
-                                        // Kullanıcının promosyon kodu kullanım geçmişini kaydet
                                         val userPromoUsage = com.cangzr.neocard.data.model.UserPromoUsage(
                                             userId = currentUser.uid,
                                             promoCodeId = promoId,
@@ -353,7 +330,6 @@ fun ProfileScreen(navController: NavHostController) {
             }
         )
 
-        // Promo Code Management Card - Sadece admin kullanıcılara görünür
         if (isAdmin) {
             PromoCodeCard(
                 promoCodeList = promoCodeList,
@@ -391,7 +367,6 @@ fun ProfileScreen(navController: NavHostController) {
             )
         }
 
-        // Settings and Actions Card
         SettingsAndActionsCard(
             navController = navController,
             isSpecialUser = false

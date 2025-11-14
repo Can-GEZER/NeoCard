@@ -20,12 +20,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-/**
- * Uygulama içindeki reklamları yöneten sınıf
- */
 class AdManager private constructor(private val context: Context) {
 
-    // Reklam gösterim durumları
     private val _showBannerAds = MutableStateFlow(true)
     val showBannerAds: StateFlow<Boolean> = _showBannerAds
 
@@ -35,7 +31,6 @@ class AdManager private constructor(private val context: Context) {
     private var interstitialAd: InterstitialAd? = null
     private val adRequest: AdRequest = AdRequest.Builder().build()
 
-    // Ad Unit IDs loaded from BuildConfig (secured via local.properties)
     companion object {
         private val BANNER_AD_UNIT_ID = BuildConfig.ADMOB_BANNER_AD_UNIT_ID
         private val INTERSTITIAL_AD_UNIT_ID = BuildConfig.ADMOB_INTERSTITIAL_AD_UNIT_ID
@@ -49,27 +44,21 @@ class AdManager private constructor(private val context: Context) {
             }
         }
         
-        // Her kaç öğede bir reklam gösterileceğini belirten sabitler
         const val JOB_POST_AD_INTERVAL = 4 // Her 3 iş ilanından sonra bir reklam
         const val BUSINESS_CARD_AD_INTERVAL = 3 // Her 2 kartvizitden sonra bir reklam
     }
 
     init {
-        // MobileAds'i başlat
         MobileAds.initialize(context) {}
         
-        // Premium kullanıcı kontrolü
         checkPremiumStatus()
         
-        // Tam sayfa reklam yükle
         loadInterstitialAd()
     }
     
-    // Premium durumuna göre reklam gösterim ayarlarını günceller
     private fun checkPremiumStatus() {
         val billingManager = BillingManager.getInstance(context)
         
-        // Coroutine scope için
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
             billingManager.isPremium.collect { isPremium ->
                 _showBannerAds.value = !isPremium
@@ -78,7 +67,6 @@ class AdManager private constructor(private val context: Context) {
         }
     }
     
-    // Banner reklam görünümünü oluşturan composable fonksiyon
     @Composable
     fun BannerAd(modifier: Modifier = Modifier) {
         val showAds by showBannerAds.collectAsState()
@@ -97,7 +85,6 @@ class AdManager private constructor(private val context: Context) {
         }
     }
     
-    // Tam sayfa reklam yükleme
     private fun loadInterstitialAd() {
         InterstitialAd.load(
             context,
@@ -114,11 +101,8 @@ class AdManager private constructor(private val context: Context) {
             })
     }
     
-    // Tam sayfa reklam gösterimi
     fun showInterstitialAd(activity: android.app.Activity, onAdDismissed: () -> Unit) {
-        // Premium kullanıcıları kontrol etmek için direkt değeri kullanalım
         if (!_showBannerAds.value) {
-            // Premium kullanıcı, reklam gösterme
             onAdDismissed()
             return
         }
@@ -126,21 +110,17 @@ class AdManager private constructor(private val context: Context) {
         if (interstitialAd != null) {
             interstitialAd?.show(activity)
             interstitialAd?.setOnPaidEventListener {
-                // Reklam gösterildikten sonra yeni bir reklam yükle
                 loadInterstitialAd()
             }
             interstitialAd?.fullScreenContentCallback = object : com.google.android.gms.ads.FullScreenContentCallback() {
                 override fun onAdDismissedFullScreenContent() {
                     interstitialAd = null
                     onAdDismissed()
-                    // Yeni bir reklam yükle
                     loadInterstitialAd()
                 }
             }
         } else {
-            // Reklam yüklenmediyse callback'i çağır
             onAdDismissed()
-            // Yeni bir reklam yüklemeyi dene
             loadInterstitialAd()
         }
     }

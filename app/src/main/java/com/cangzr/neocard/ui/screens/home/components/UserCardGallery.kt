@@ -50,20 +50,16 @@ fun UserCardGallery(
     val context = LocalContext.current
     val viewModel: HomeViewModel = hiltViewModel()
     
-    // Collect paging items
     val userCards = viewModel.userCardsPagingFlow.collectAsLazyPagingItems()
     
-    // Remember computed values
     val allFilterText = remember { context.getString(R.string.all) }
     val isAuthenticated = remember { viewModel.isUserAuthenticated() }
     
-    // Use derivedStateOf for filtered cards to avoid recomposition
     val filteredCards = remember(filterType, allFilterText) {
         derivedStateOf {
             if (filterType == allFilterText) {
                 userCards
             } else {
-                // Filter will be applied in UI layer
                 userCards
             }
         }
@@ -92,7 +88,6 @@ private fun UserCardGalleryContent(
 ) {
     val context = LocalContext.current
     
-    // Filter function with memoization based on filterType
     val shouldShowCard = remember(filterType, allFilterText) {
         { card: UserCard ->
             if (filterType == allFilterText) {
@@ -112,12 +107,10 @@ private fun UserCardGalleryContent(
         modifier = modifier.fillMaxSize()
     ) {
         when {
-            // User not authenticated
             !isAuthenticated -> {
                 LoginPromptCard(onNavigateToAuth = onNavigateToAuth)
             }
             
-            // Loading first page
             userCards.loadState.refresh is LoadState.Loading -> {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
@@ -127,19 +120,16 @@ private fun UserCardGalleryContent(
                 }
             }
             
-            // Error loading
             userCards.loadState.refresh is LoadState.Error -> {
                 ErrorCard(
                     onRetry = { userCards.retry() }
                 )
             }
             
-            // Empty state
             userCards.itemCount == 0 -> {
                 EmptyStateCard()
             }
             
-            // Show cards
             else -> {
                 CardsList(
                     userCards = userCards,
@@ -255,16 +245,13 @@ private fun CardsList(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(end = 8.dp)
     ) {
-        // Items with key for better performance
         items(
             count = userCards.itemCount,
             key = { index ->
-                // Use card ID as key for better recomposition performance
                 userCards[index]?.id ?: index
             }
         ) { index ->
             userCards[index]?.let { card ->
-                // Apply filter
                 if (shouldShowCard(card)) {
                     UserCardItem(
                         card = card,
@@ -274,7 +261,6 @@ private fun CardsList(
             }
         }
         
-        // Loading indicator for pagination
         if (userCards.loadState.append is LoadState.Loading) {
             item {
                 Box(
@@ -291,7 +277,6 @@ private fun CardsList(
             }
         }
         
-        // Error indicator for pagination
         if (userCards.loadState.append is LoadState.Error) {
             item {
                 Box(

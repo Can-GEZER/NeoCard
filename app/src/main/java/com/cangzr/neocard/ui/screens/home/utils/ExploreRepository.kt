@@ -4,7 +4,6 @@ import com.cangzr.neocard.data.model.UserCard
 import com.cangzr.neocard.data.model.TextStyleDTO
 import com.google.firebase.firestore.FirebaseFirestore
 
-// Keşif Kartlarını Yükleme Fonksiyonu (Rastgele Sıralama ile)
 fun loadExploreCards(
     firestore: FirebaseFirestore,
     currentUserId: String?,
@@ -18,21 +17,17 @@ fun loadExploreCards(
         return
     }
     
-    // Önce kullanıcının bağlantılarını al
     firestore.collection("users").document(currentUserId).get()
         .addOnSuccessListener { userDoc ->
             val connectedList = userDoc.get("connected") as? List<Map<String, String>> ?: emptyList()
             val connectedCardIds = connectedList.mapNotNull { it["cardId"] }.toSet()
             
-            // Rastgele sıralama için daha fazla kart çek ve shuffle yap
-            // İlk yükleme için büyük bir batch çek, sonrakiler için normal pagination
             val queryLimit = if (lastCardId == null) (pageSize * 5).toLong() else pageSize.toLong()
             
             var query = firestore.collection("public_cards")
                 .whereEqualTo("isPublic", true)
                 .limit(queryLimit)
             
-            // Eğer son kart ID'si varsa, o karttan sonrasını getir
             if (lastCardId != null) {
                 firestore.collection("public_cards")
                     .document(lastCardId)
@@ -54,7 +49,6 @@ fun loadExploreCards(
                         onError()
                     }
             } else {
-                // İlk sayfayı getir ve shuffle yap
                 executeExploreQuery(query, pageSize, currentUserId, connectedCardIds, false, onSuccess, onError)
             }
         }
@@ -80,7 +74,6 @@ private fun executeExploreQuery(
                 querySnapshot.documents.forEach { doc ->
                     val userId = doc.getString("userId") ?: ""
                     val cardId = doc.id
-                    // Kullanıcının bağlantılarında olmayan kartları filtrele
                     if (userId.isNotEmpty() && userId != currentUserId && !connectedCardIds.contains(cardId)) {
                         publicDocs.add(doc)
                         tasks.add(
@@ -126,19 +119,14 @@ private fun executeExploreQuery(
                             } catch (_: Exception) {}
                         }
 
-                        // İlk yüklemede kartları rastgele sırala, sonraki sayfalarda sırayı koru
                         val finalCards = if (isPaginating) {
-                            // Pagination sırasında shuffle yapma, sırayı koru
                             resultCards
                         } else {
-                            // İlk yüklemede shuffle yap
                             resultCards.shuffled()
                         }
                         
-                        // İstenen sayfa boyutuna göre kartları sınırla
                         val limitedCards = finalCards.take(pageSize)
                         
-                        // Son kartın orijinal ID'sini pagination için kullan
                         val lastOriginalCardId = if (resultCards.isNotEmpty()) resultCards.last().id else null
                         val hasMoreCards = resultCards.size >= pageSize
                         onSuccess(limitedCards, lastOriginalCardId, hasMoreCards)

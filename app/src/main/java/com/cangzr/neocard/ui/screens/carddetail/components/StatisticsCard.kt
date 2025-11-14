@@ -54,7 +54,6 @@ fun StatisticsCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Başlık ve Yenile butonu
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -82,7 +81,6 @@ fun StatisticsCard(
             Spacer(modifier = Modifier.height(8.dp))
             
             if (isLoading) {
-                // Yükleniyor göstergesi
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -96,7 +94,6 @@ fun StatisticsCard(
                     )
                 }
             } else if (statistics == null) {
-                // İstatistik yok
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -123,7 +120,6 @@ fun StatisticsCard(
                     }
                 }
             } else {
-                // İstatistik özeti
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -164,7 +160,6 @@ fun StatisticsCard(
                     )
                 }
                 
-                // Link tıklamaları detayı
                 if (statistics.linkClicksByType.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(16.dp))
                     
@@ -176,7 +171,6 @@ fun StatisticsCard(
                     
                     Spacer(modifier = Modifier.height(8.dp))
                     
-                    // En çok tıklanan 3 linki göster
                     statistics.linkClicksByType.entries
                         .sortedByDescending { it.value }
                         .take(3)

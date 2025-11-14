@@ -8,11 +8,14 @@ import androidx.lifecycle.viewModelScope
 import com.cangzr.neocard.R
 import com.cangzr.neocard.common.Resource
 import com.cangzr.neocard.data.CardType
+import com.cangzr.neocard.data.model.Skill
 import com.cangzr.neocard.data.model.TextStyleDTO
 import com.cangzr.neocard.data.model.UserCard
 import com.cangzr.neocard.data.repository.AuthRepository
 import com.cangzr.neocard.domain.usecase.GetUserCardsUseCase
 import com.cangzr.neocard.domain.usecase.SaveCardUseCase
+import com.cangzr.neocard.domain.usecase.GetCardUseCase
+import com.cangzr.neocard.domain.usecase.UpdateCardUseCase
 import com.cangzr.neocard.ui.screens.createcard.utils.CardCreationUtils
 import com.cangzr.neocard.utils.ValidationResult
 import com.cangzr.neocard.utils.ValidationUtils
@@ -50,14 +53,14 @@ data class CreateCardUiState(
 class CreateCardViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val saveCardUseCase: SaveCardUseCase,
-    private val getUserCardsUseCase: GetUserCardsUseCase
+    private val getUserCardsUseCase: GetUserCardsUseCase,
+    private val getCardUseCase: GetCardUseCase,
+    private val updateCardUseCase: UpdateCardUseCase
 ) : ViewModel() {
     
-    // UI State for save operation
     private val _uiState = MutableStateFlow<Resource<CreateCardUiState>>(Resource.Success(CreateCardUiState()))
     val uiState: StateFlow<Resource<CreateCardUiState>> = _uiState
     
-    // Form state
     private val _name = MutableStateFlow("")
     val name: StateFlow<String> = _name
     
@@ -94,7 +97,24 @@ class CreateCardViewModel @Inject constructor(
     private val _github = MutableStateFlow("")
     val github: StateFlow<String> = _github
     
-    // Design state
+    private val _bio = MutableStateFlow("")
+    val bio: StateFlow<String> = _bio
+    
+    private val _cv = MutableStateFlow("")
+    val cv: StateFlow<String> = _cv
+    
+    private val _skills = MutableStateFlow<List<Skill>>(emptyList())
+    val skills: StateFlow<List<Skill>> = _skills
+    
+    private val _cardId = MutableStateFlow<String?>(null)
+    val cardId: StateFlow<String?> = _cardId
+    
+    private val _isLoadingCard = MutableStateFlow(false)
+    val isLoadingCard: StateFlow<Boolean> = _isLoadingCard
+    
+    private val _loadCardError = MutableStateFlow<String?>(null)
+    val loadCardError: StateFlow<String?> = _loadCardError
+    
     private val _backgroundColor = MutableStateFlow(androidx.compose.ui.graphics.Color.White)
     val backgroundColor: StateFlow<androidx.compose.ui.graphics.Color> = _backgroundColor
     
@@ -127,7 +147,6 @@ class CreateCardViewModel @Inject constructor(
     private val _isPublic = MutableStateFlow(true)
     val isPublic: StateFlow<Boolean> = _isPublic
     
-    // UI state
     private val _isPremium = MutableStateFlow(false)
     val isPremium: StateFlow<Boolean> = _isPremium
     
@@ -137,7 +156,6 @@ class CreateCardViewModel @Inject constructor(
     private val _showPremiumDialog = MutableStateFlow(false)
     val showPremiumDialog: StateFlow<Boolean> = _showPremiumDialog
     
-    // Validation error states
     private val _nameError = MutableStateFlow<String?>(null)
     val nameError: StateFlow<String?> = _nameError
     
@@ -180,9 +198,7 @@ class CreateCardViewModel @Inject constructor(
     
     fun updateName(value: String) {
         _name.value = value
-        // Clear error when user starts typing
         _nameError.value = null
-        // Validate immediately
         validateName()
     }
     
@@ -248,6 +264,24 @@ class CreateCardViewModel @Inject constructor(
         validateGitHub()
     }
     
+    fun updateBio(value: String) {
+        _bio.value = value
+    }
+    
+    fun updateCv(value: String) {
+        _cv.value = value
+    }
+    
+    fun addSkill(skillName: String) {
+        if (skillName.isNotBlank() && _skills.value.none { it.name.equals(skillName, ignoreCase = true) }) {
+            _skills.value = _skills.value + Skill(name = skillName.trim())
+        }
+    }
+    
+    fun removeSkill(skill: Skill) {
+        _skills.value = _skills.value.filter { it != skill }
+    }
+    
     fun updateBackgroundColor(color: androidx.compose.ui.graphics.Color) {
         _backgroundColor.value = color
     }
@@ -307,6 +341,9 @@ class CreateCardViewModel @Inject constructor(
         _twitter.value = ""
         _facebook.value = ""
         _github.value = ""
+        _bio.value = ""
+        _cv.value = ""
+        _skills.value = emptyList()
         _backgroundColor.value = androidx.compose.ui.graphics.Color.White
         _backgroundType.value = BackgroundType.SOLID
         _selectedGradient.value = Pair("Sunset", androidx.compose.ui.graphics.Brush.horizontalGradient(listOf(androidx.compose.ui.graphics.Color(0xFFFE6B8B), androidx.compose.ui.graphics.Color(0xFFFF8E53))))
@@ -320,9 +357,108 @@ class CreateCardViewModel @Inject constructor(
         _profileImageUri.value = null
         _selectedImageBitmap.value = null
         _isPublic.value = true
+        _cardId.value = null
     }
     
-    // Validation methods
+    fun loadCard(cardId: String, context: Context) {
+        _isLoadingCard.value = true
+        _loadCardError.value = null
+        _cardId.value = cardId
+        
+        val currentUser = authRepository.getCurrentUser()
+        if (currentUser == null) {
+            _isLoadingCard.value = false
+            _loadCardError.value = context.getString(R.string.please_login)
+            return
+        }
+        
+        viewModelScope.launch {
+            try {
+                when (val result = getCardUseCase(
+                    userId = currentUser.uid,
+                    cardId = cardId
+                )) {
+                    is Resource.Success -> {
+                        val card = result.data
+                        if (card != null) {
+                            _name.value = card.name
+                            _surname.value = card.surname
+                            _phone.value = card.phone
+                            _email.value = card.email
+                            _company.value = card.company
+                            _title.value = card.title
+                            _website.value = card.website
+                            _linkedin.value = card.linkedin
+                            _instagram.value = card.instagram
+                            _twitter.value = card.twitter
+                            _facebook.value = card.facebook
+                            _github.value = card.github
+                            _bio.value = card.bio
+                            _cv.value = card.cv
+                            _skills.value = card.skills
+                            _isPublic.value = card.isPublic
+                            
+                            _backgroundType.value = if (card.backgroundType == "GRADIENT") BackgroundType.GRADIENT else BackgroundType.SOLID
+                            _backgroundColor.value = hexToColor(card.backgroundColor)
+                            
+                            if (card.backgroundType == "GRADIENT" && card.selectedGradient.isNotEmpty()) {
+                                val gradients = CardCreationUtils.getPredefinedGradients(context)
+                                val foundGradient = gradients.firstOrNull { it.first == card.selectedGradient }
+                                if (foundGradient != null) {
+                                    _selectedGradient.value = foundGradient
+                                }
+                            }
+                            
+                            _selectedCardType.value = CardType.entries.find { it.name == card.cardType }
+                            
+                            val textStylesMap = mutableMapOf<TextType, TextStyle>()
+                            card.textStyles.forEach { (key, dto) ->
+                                val textType = TextType.entries.find { it.name == key }
+                                textType?.let {
+                                    textStylesMap[it] = TextStyle(
+                                        isBold = dto.isBold,
+                                        isItalic = dto.isItalic,
+                                        isUnderlined = dto.isUnderlined,
+                                        fontSize = dto.fontSize ?: 16f,
+                                        color = dto.color?.let { hexToColor(it) } ?: androidx.compose.ui.graphics.Color.Black
+                                    )
+                                }
+                            }
+                            if (textStylesMap.isNotEmpty()) {
+                                _textStyles.value = textStylesMap
+                            }
+                            
+                            if (!card.profileImageUrl.isNullOrEmpty()) {
+                            }
+                            
+                            _isLoadingCard.value = false
+                        } else {
+                            _isLoadingCard.value = false
+                            _loadCardError.value = context.getString(R.string.card_not_found)
+                        }
+                    }
+                    is Resource.Error -> {
+                        _isLoadingCard.value = false
+                        _loadCardError.value = result.userMessage ?: result.message ?: context.getString(R.string.error_occurred, result.exception?.localizedMessage ?: "")
+                    }
+                    is Resource.Loading -> {
+                    }
+                }
+            } catch (e: Exception) {
+                _isLoadingCard.value = false
+                _loadCardError.value = context.getString(R.string.error_occurred, e.localizedMessage)
+            }
+        }
+    }
+    
+    private fun hexToColor(hex: String): androidx.compose.ui.graphics.Color {
+        return try {
+            androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(hex))
+        } catch (e: Exception) {
+            androidx.compose.ui.graphics.Color.White
+        }
+    }
+    
     private fun validateName() {
         val result = ValidationUtils.validateName(_name.value, isRequired = true)
         _nameError.value = result.getErrorOrNull()
@@ -373,10 +509,6 @@ class CreateCardViewModel @Inject constructor(
         _facebookError.value = result.getErrorOrNull()
     }
     
-    /**
-     * Validates all form fields
-     * @return true if all fields are valid
-     */
     private fun validateAllFields(): Boolean {
         validateName()
         validateSurname()
@@ -402,7 +534,6 @@ class CreateCardViewModel @Inject constructor(
     }
     
     fun saveCard(context: Context, onSuccess: () -> Unit) {
-        // Validate all fields before saving
         if (!validateAllFields()) {
             _uiState.value = Resource.Error(
                 exception = IllegalArgumentException("Validation failed"),
@@ -421,45 +552,44 @@ class CreateCardViewModel @Inject constructor(
             return
         }
         
+        val isEditMode = _cardId.value != null
+        
         viewModelScope.launch {
             _uiState.value = Resource.Loading
             
             try {
                 val isPremiumUser = _isPremium.value
                 
-                    // Premium kontrolü
-                if (!isPremiumUser) {
-                        when (val result = getUserCardsUseCase(
-                            userId = currentUser.uid,
-                            pageSize = 1,
-                            lastCardId = null
-                        )) {
-                            is Resource.Success -> {
-                                val (cards, _, _) = result.data
-                                if (cards.isNotEmpty()) {
-                                    _uiState.value = Resource.Error(
-                                        exception = Exception("Premium required"),
-                                        message = context.getString(R.string.premium_card_limit)
-                                    )
-                                    return@launch
-                                }
-                            }
-                            is Resource.Error -> {
+                if (!isEditMode && !isPremiumUser) {
+                    when (val result = getUserCardsUseCase(
+                        userId = currentUser.uid,
+                        pageSize = 1,
+                        lastCardId = null
+                    )) {
+                        is Resource.Success -> {
+                            val (cards, _, _) = result.data
+                            if (cards.isNotEmpty()) {
                                 _uiState.value = Resource.Error(
-                                    exception = result.exception,
-                                    message = context.getString(R.string.error_occurred, result.message)
+                                    exception = Exception("Premium required"),
+                                    message = context.getString(R.string.premium_card_limit)
                                 )
                                 return@launch
                             }
-                            is Resource.Loading -> {
-                                // Continue
-                            }
+                        }
+                        is Resource.Error -> {
+                            _uiState.value = Resource.Error(
+                                exception = result.exception,
+                                message = context.getString(R.string.error_occurred, result.message)
+                            )
+                            return@launch
+                        }
+                        is Resource.Loading -> {
                         }
                     }
+                }
                 
-                // UI state'den UserCard oluştur
                 val card = UserCard(
-                    id = "",
+                    id = _cardId.value ?: "",
                     name = _name.value,
                     surname = _surname.value,
                     phone = _phone.value,
@@ -472,8 +602,9 @@ class CreateCardViewModel @Inject constructor(
                     twitter = _twitter.value,
                     facebook = _facebook.value,
                     github = _github.value,
-                    bio = "",
-                    cv = "",
+                    bio = _bio.value,
+                    cv = _cv.value,
+                    skills = _skills.value,
                     backgroundType = _backgroundType.value.name,
                     backgroundColor = _backgroundColor.value.toArgb().toHexColor(),
                     selectedGradient = _selectedGradient.value.first,
@@ -491,26 +622,37 @@ class CreateCardViewModel @Inject constructor(
                     isPublic = _isPublic.value
                 )
                 
-                        // UseCase ile kartı kaydet
-                        when (val result = saveCardUseCase(
-                            userId = currentUser.uid,
-                            card = card,
-                            imageUri = _profileImageUri.value
-                        )) {
-                            is Resource.Success -> {
-                                clearForm()
-                                _uiState.value = Resource.Success(CreateCardUiState(isSaved = true))
-                                onSuccess()
-                            }
-                            is Resource.Error -> {
-                                _uiState.value = Resource.Error(
-                                    exception = result.exception,
-                                    message = context.getString(R.string.error_occurred, result.message)
-                                )
-                            }
-                            is Resource.Loading -> {
-                                // Loading already handled
-                            }
+                val result = if (isEditMode) {
+                    updateCardUseCase(
+                        userId = currentUser.uid,
+                        cardId = _cardId.value!!,
+                        card = card,
+                        imageUri = _profileImageUri.value
+                    )
+                } else {
+                    saveCardUseCase(
+                        userId = currentUser.uid,
+                        card = card,
+                        imageUri = _profileImageUri.value
+                    )
+                }
+                
+                when (result) {
+                    is Resource.Success -> {
+                        if (!isEditMode) {
+                            clearForm()
+                        }
+                        _uiState.value = Resource.Success(CreateCardUiState(isSaved = true))
+                        onSuccess()
+                    }
+                    is Resource.Error -> {
+                        _uiState.value = Resource.Error(
+                            exception = result.exception,
+                            message = result.userMessage ?: context.getString(R.string.error_occurred, result.message)
+                        )
+                    }
+                    is Resource.Loading -> {
+                    }
                 }
                 
             } catch (e: Exception) {

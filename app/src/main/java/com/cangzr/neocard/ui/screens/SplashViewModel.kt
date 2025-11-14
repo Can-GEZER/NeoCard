@@ -11,21 +11,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * Splash ekranı için ViewModel
- */
 @HiltViewModel
 class SplashViewModel @Inject constructor(
     private val auth: FirebaseAuth
 ) : ViewModel() {
     
-    // Uygulama başlangıç durumu
     private val _splashState = MutableStateFlow<SplashState>(SplashState.Loading)
     val splashState: StateFlow<SplashState> = _splashState
     
-    /**
-     * Uygulama başlangıç durumunu kontrol eder
-     */
     fun checkAppStartState(
         isNetworkAvailable: Boolean,
         isOnboardingCompleted: Boolean
@@ -39,15 +32,12 @@ class SplashViewModel @Inject constructor(
             val currentUser = auth.currentUser
             
             _splashState.value = when {
-                // Kullanıcı giriş yapmamış ve onboarding tamamlanmamış
                 currentUser == null && !isOnboardingCompleted -> {
                     SplashState.NavigateToOnboarding
                 }
-                // Kullanıcı giriş yapmamış ama onboarding tamamlanmış
                 currentUser == null && isOnboardingCompleted -> {
                     SplashState.NavigateToAuth
                 }
-                // Kullanıcı giriş yapmış
                 else -> {
                     SplashState.NavigateToHome
                 }
@@ -56,9 +46,6 @@ class SplashViewModel @Inject constructor(
     }
 }
 
-/**
- * Splash ekranı durumları
- */
 sealed class SplashState {
     object Loading : SplashState()
     object NetworkError : SplashState()

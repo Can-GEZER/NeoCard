@@ -13,13 +13,6 @@ import androidx.compose.ui.unit.dp
 import com.cangzr.neocard.common.ErrorMapper
 import com.cangzr.neocard.common.Resource
 
-/**
- * Displays an error message with retry option
- * 
- * @param error The Resource.Error to display
- * @param onRetry Callback when retry button is clicked
- * @param modifier Modifier for the composable
- */
 @Composable
 fun ErrorDisplay(
     error: Resource.Error,
@@ -35,15 +28,6 @@ fun ErrorDisplay(
     )
 }
 
-/**
- * Displays an error message with optional retry button
- * 
- * @param title Error title
- * @param message Error message
- * @param showRetry Whether to show retry button
- * @param onRetry Callback when retry button is clicked
- * @param modifier Modifier for the composable
- */
 @Composable
 fun ErrorDisplay(
     title: String,
@@ -108,11 +92,6 @@ fun ErrorDisplay(
     }
 }
 
-/**
- * Shows a customized SnackbarHost for error messages
- * 
- * @param snackbarHostState The SnackbarHostState to show the message
- */
 @Composable
 fun ErrorSnackbarHost(
     snackbarHostState: SnackbarHostState,
@@ -131,13 +110,6 @@ fun ErrorSnackbarHost(
     }
 }
 
-/**
- * Shows an error in an AlertDialog
- * 
- * @param error The Resource.Error to display
- * @param onDismiss Callback when dialog is dismissed
- * @param onRetry Optional callback when retry is clicked
- */
 @Composable
 fun ErrorAlertDialog(
     error: Resource.Error,
@@ -189,12 +161,6 @@ fun ErrorAlertDialog(
     )
 }
 
-/**
- * Inline error message (for form fields, etc.)
- * 
- * @param error The Resource.Error to display
- * @param modifier Modifier for the composable
- */
 @Composable
 fun InlineErrorMessage(
     error: Resource.Error,

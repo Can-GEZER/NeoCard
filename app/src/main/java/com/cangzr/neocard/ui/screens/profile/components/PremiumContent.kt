@@ -50,7 +50,6 @@ fun PremiumContent(onClose: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Başlık Alanı
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -80,7 +79,6 @@ fun PremiumContent(onClose: () -> Unit) {
             )
         }
 
-        // Premium Özellikleri
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -95,7 +93,6 @@ fun PremiumContent(onClose: () -> Unit) {
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Premium Özellikleri Başlığı
                 Text(
                     text = context.getString(R.string.premium_features),
                     style = MaterialTheme.typography.titleMedium,
@@ -120,7 +117,6 @@ fun PremiumContent(onClose: () -> Unit) {
             }
         }
 
-        // Fiyat Kartı
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
@@ -175,7 +171,6 @@ fun PremiumContent(onClose: () -> Unit) {
             }
         }
 
-        // Kapat Butonu
         TextButton(
             onClick = onClose,
             modifier = Modifier.padding(top = 8.dp)

@@ -68,7 +68,6 @@ fun HomeScreen(navController: NavHostController) {
     val viewModel: HomeViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
     
-    // Collect paging data as LazyPagingItems
     val userCards = viewModel.userCardsPagingFlow.collectAsLazyPagingItems()
     val exploreCards = viewModel.exploreCardsPagingFlow.collectAsLazyPagingItems()
 
@@ -76,18 +75,14 @@ fun HomeScreen(navController: NavHostController) {
     val allFilterText = context.getString(R.string.all)
     var selectedCardType by remember { mutableStateOf(allFilterText) }
     
-    // Dialog state
     var showCardDialog by remember { mutableStateOf(false) }
     var dialogCard by remember { mutableStateOf<UserCard?>(null) }
     
-    // Bottom sheet state
     val bottomSheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
     
-    // Kart tipleri listesi - "Tümü" ve CardType enum değerleri
     val cardTypes = listOf(allFilterText) + CardType.entries.map { it.getTitle() }
     
-    // Check if user is authenticated
     if (!viewModel.isUserAuthenticated()) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -114,7 +109,6 @@ fun HomeScreen(navController: NavHostController) {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
 
-            // Kartvizit Galerisi Başlık
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -127,7 +121,6 @@ fun HomeScreen(navController: NavHostController) {
                 style = MaterialTheme.typography.titleLarge
             )
             
-            // Kart Tipi Filtresi
             Box {
                 FilterChip(
                     onClick = { showCardTypeDropdown = true },
@@ -163,7 +156,6 @@ fun HomeScreen(navController: NavHostController) {
                 }
             }
 
-            // Kartvizit Galerisi
             UserCardGallery(
                 navController = navController,
                 filterType = selectedCardType,
@@ -176,17 +168,14 @@ fun HomeScreen(navController: NavHostController) {
                 modifier = Modifier.height(200.dp)
             )
         
-        // Keşfet Kartları - Ayrı scrollable container
                 ExploreCardsSection(navController = navController)
     }
     
-    // Card Detail Dialog - Ekran yüzeyinde göster
     if (showCardDialog && dialogCard != null) {
         Box(
             modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-            // Koyu arka plan
             Box(
                                     modifier = Modifier
                                         .fillMaxSize()
@@ -195,7 +184,6 @@ fun HomeScreen(navController: NavHostController) {
                     )
             )
             
-            // Dialog içeriği
             UserCardDialog(
                 onViewDetails = {
                     navController.navigate("card_detail/${dialogCard?.id}")
@@ -214,7 +202,6 @@ fun HomeScreen(navController: NavHostController) {
         }
     }
     
-            // Bottom Sheet for sharing
             if (showBottomSheet && dialogCard != null) {
                 ModalBottomSheet(
                     onDismissRequest = { showBottomSheet = false },

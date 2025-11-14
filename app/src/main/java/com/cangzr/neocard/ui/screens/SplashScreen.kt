@@ -52,43 +52,33 @@ fun SplashScreen(
     val networkUtils = remember { NetworkUtils.getInstance(context) }
     val onboardingPreferences = remember { OnboardingPreferences.getInstance(context) }
     
-    // İnternet bağlantısı durumu
     val isNetworkAvailable by networkUtils.isNetworkAvailable.collectAsState()
     
-    // Onboarding durumu
     val isOnboardingCompleted by onboardingPreferences.isOnboardingCompleted.collectAsState(initial = false)
     
-    // Animasyon durumları
     var startAnimation by remember { mutableStateOf(false) }
     val alphaAnim by animateFloatAsState(
         targetValue = if (startAnimation) 1f else 0f,
         animationSpec = tween(durationMillis = 1500)
     )
     
-    // Hata durumu
     var showNetworkError by remember { mutableStateOf(false) }
     
-    // İnternet bağlantısı durumu değiştiğinde tetiklenecek efekt
     LaunchedEffect(isNetworkAvailable) {
         if (isNetworkAvailable && showNetworkError) {
-            // İnternet bağlantısı geldiğinde ve daha önce hata gösteriliyorsa
-            // Kullanıcı giriş yapmış mı kontrolü
             val currentUser = FirebaseAuth.getInstance().currentUser
             
             when {
-                // Kullanıcı giriş yapmamış ve onboarding tamamlanmamış
                 currentUser == null && !isOnboardingCompleted -> {
                     navController.navigate(Screen.Onboarding.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 }
-                // Kullanıcı giriş yapmamış ama onboarding tamamlanmış
                 currentUser == null && isOnboardingCompleted -> {
                     navController.navigate(Screen.Auth.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 }
-                // Kullanıcı giriş yapmış
                 else -> {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
@@ -98,32 +88,26 @@ fun SplashScreen(
         }
     }
     
-    // İlk yükleme efekti
     LaunchedEffect(key1 = true) {
         startAnimation = true
         delay(2000) // 2 saniye bekle
         
-        // İnternet bağlantısı kontrolü
         if (!isNetworkAvailable) {
             showNetworkError = true
         } else {
-            // Kullanıcı giriş yapmış mı kontrolü
             val currentUser = FirebaseAuth.getInstance().currentUser
             
             when {
-                // Kullanıcı giriş yapmamış ve onboarding tamamlanmamış
                 currentUser == null && !isOnboardingCompleted -> {
                     navController.navigate(Screen.Onboarding.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 }
-                // Kullanıcı giriş yapmamış ama onboarding tamamlanmış
                 currentUser == null && isOnboardingCompleted -> {
                     navController.navigate(Screen.Auth.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 }
-                // Kullanıcı giriş yapmış
                 else -> {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
@@ -133,7 +117,6 @@ fun SplashScreen(
         }
     }
     
-    // Splash Screen UI
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -145,7 +128,6 @@ fun SplashScreen(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.alpha(alphaAnim)
         ) {
-            // Logo
             Image(
                 painter = painterResource(id = R.drawable.logo3),
                 contentDescription = "NeoCard Logo",
@@ -154,7 +136,6 @@ fun SplashScreen(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Uygulama Adı
             Text(
                 text = "NeoCard",
                 fontSize = 28.sp,
@@ -164,7 +145,6 @@ fun SplashScreen(
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Yükleniyor göstergesi veya hata mesajı
             if (showNetworkError) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -180,7 +160,6 @@ fun SplashScreen(
                     
                     Spacer(modifier = Modifier.height(16.dp))
                     
-                    // İnternet bağlantısı kontrolü devam ediyor göstergesi
                     CircularProgressIndicator(
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(24.dp),

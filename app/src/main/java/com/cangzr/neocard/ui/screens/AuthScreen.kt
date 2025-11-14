@@ -51,8 +51,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import androidx.compose.ui.graphics.ColorFilter
 import com.cangzr.neocard.R
+import com.cangzr.neocard.utils.ReferralCodeManager
+import com.cangzr.neocard.data.repository.ReferralRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 
-class AuthViewModel : ViewModel() {
+@HiltViewModel
+class AuthViewModel @Inject constructor(
+    private val referralRepository: ReferralRepository
+) : ViewModel() {
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Initial)
     val uiState: StateFlow<AuthUiState> = _uiState
 
@@ -96,31 +103,59 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    fun registerUser(email: String, password: String, displayName: String) {
+    fun registerUser(email: String, password: String, displayName: String, context: Context) {
         viewModelScope.launch {
             try {
                 _uiState.value = AuthUiState.Loading
                 val authResult = auth.createUserWithEmailAndPassword(email, password).await()
                 
                 authResult.user?.let { firebaseUser ->
+                    val referralCodeResult = referralRepository.generateReferralCode(firebaseUser.uid)
+                    val referralCode = if (referralCodeResult is com.cangzr.neocard.common.Resource.Success) {
+                        referralCodeResult.data
+                    } else {
+                        null
+                    }
+
                     val userData = hashMapOf(
                         "id" to firebaseUser.uid,
                         "email" to email,
                         "displayName" to displayName,
                         "premium" to false,
                         "connectRequests" to emptyList<String>(),
-                        "connected" to emptyList<String>()
+                        "connected" to emptyList<String>(),
+                        "referralCount" to 0L
                     )
+
+                    referralCode?.let {
+                        userData["referralCode"] = it
+                    }
 
                     firestore.collection("users").document(firebaseUser.uid)
                         .set(userData)
                         .await()
                     
-                    val context = FirebaseAuth.getInstance().app.applicationContext
+                    val pendingReferralCode = ReferralCodeManager.getAndClearReferralCode(context)
+                    if (pendingReferralCode != null && pendingReferralCode != referralCode) {
+                        val referrerIdResult = referralRepository.validateReferralCode(pendingReferralCode)
+                        if (referrerIdResult is com.cangzr.neocard.common.Resource.Success && referrerIdResult.data != null) {
+                            val referrerId = referrerIdResult.data!!
+                            if (referrerId != firebaseUser.uid) {
+                                val isReferredResult = referralRepository.isUserReferred(firebaseUser.uid)
+                                if (isReferredResult is com.cangzr.neocard.common.Resource.Success && !isReferredResult.data) {
+                                    referralRepository.createReferral(
+                                        referrerId = referrerId,
+                                        referredId = firebaseUser.uid,
+                                        referralCode = pendingReferralCode
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    
                     _uiState.value = AuthUiState.Success(context.getString(R.string.registration_successful))
                 }
             } catch (e: Exception) {
-                val context = FirebaseAuth.getInstance().app.applicationContext
                 val errorMessage = when (e.message) {
                     "The email address is already in use by another account." -> 
                         context.getString(R.string.email_already_in_use)
@@ -156,40 +191,63 @@ class AuthViewModel : ViewModel() {
         }
     }
 
-    // Google ile giriş işlemi
-    fun signInWithGoogle(credential: GoogleSignInAccount) {
+    fun signInWithGoogle(credential: GoogleSignInAccount, context: Context) {
         viewModelScope.launch {
             try {
                 _uiState.value = AuthUiState.Loading
                 
-                // Google kimlik bilgilerini Firebase kimlik doğrulama bilgilerine dönüştür
                 val googleCredential = GoogleAuthProvider.getCredential(credential.idToken, null)
                 
-                // Firebase ile kimlik doğrulama yap
                 val authResult = auth.signInWithCredential(googleCredential).await()
                 
-                // Kullanıcı bilgilerini Firestore'a kaydet veya güncelle
                 authResult.user?.let { firebaseUser ->
-                    // Kullanıcının Firestore'da olup olmadığını kontrol et
                     val userDoc = firestore.collection("users").document(firebaseUser.uid).get().await()
                     
                     if (!userDoc.exists()) {
-                        // Yeni kullanıcı, Firestore'a kaydet
+                        val referralCodeResult = referralRepository.generateReferralCode(firebaseUser.uid)
+                        val referralCode = if (referralCodeResult is com.cangzr.neocard.common.Resource.Success) {
+                            referralCodeResult.data
+                        } else {
+                            null
+                        }
+
                         val userData = hashMapOf(
                             "id" to firebaseUser.uid,
                             "email" to firebaseUser.email,
                             "displayName" to firebaseUser.displayName,
                             "premium" to false,
                             "connectRequests" to emptyList<String>(),
-                            "connected" to emptyList<String>()
+                            "connected" to emptyList<String>(),
+                            "referralCount" to 0L
                         )
+
+                        referralCode?.let {
+                            userData["referralCode"] = it
+                        }
 
                         firestore.collection("users").document(firebaseUser.uid)
                             .set(userData)
                             .await()
+                        
+                        val pendingReferralCode = ReferralCodeManager.getAndClearReferralCode(context)
+                        if (pendingReferralCode != null && pendingReferralCode != referralCode) {
+                            val referrerIdResult = referralRepository.validateReferralCode(pendingReferralCode)
+                            if (referrerIdResult is com.cangzr.neocard.common.Resource.Success && referrerIdResult.data != null) {
+                                val referrerId = referrerIdResult.data!!
+                                if (referrerId != firebaseUser.uid) {
+                                    val isReferredResult = referralRepository.isUserReferred(firebaseUser.uid)
+                                    if (isReferredResult is com.cangzr.neocard.common.Resource.Success && !isReferredResult.data) {
+                                        referralRepository.createReferral(
+                                            referrerId = referrerId,
+                                            referredId = firebaseUser.uid,
+                                            referralCode = pendingReferralCode
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                     
-                    val context = FirebaseAuth.getInstance().app.applicationContext
                     _uiState.value = AuthUiState.Success(context.getString(R.string.login_successful))
                 }
             } catch (e: Exception) {
@@ -211,7 +269,6 @@ sealed class AuthUiState {
     data class Error(val message: String) : AuthUiState()
 }
 
-// Google Sign-In istemcisini oluşturmak için yardımcı fonksiyon
 fun getGoogleSignInClient(context: Context): GoogleSignInClient {
     val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
         .requestIdToken(context.getString(R.string.default_web_client_id))
@@ -230,14 +287,11 @@ fun AuthScreen(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     
-    // Google Sign-In istemcisi
     val googleSignInClient = remember { getGoogleSignInClient(context) }
     
-    // Google Sign-In hatası için state
     var signInError by remember { mutableStateOf<String?>(null) }
     var isGoogleSignInLoading by remember { mutableStateOf(false) }
     
-    // Google Sign-In için ActivityResult launcher
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -245,14 +299,12 @@ fun AuthScreen(
         val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
         try {
             val account = task.getResult(ApiException::class.java)
-            account?.let { viewModel.signInWithGoogle(it) }
+            account?.let { viewModel.signInWithGoogle(it, context) }
         } catch (e: ApiException) {
-            // Google Sign-In hatası
             signInError = context.getString(R.string.google_signin_error, e.statusCode)
         }
     }
     
-    // Google Sign-In hatası varsa snackbar göster
     LaunchedEffect(signInError) {
         signInError?.let {
             snackbarHostState.showSnackbar(it)
@@ -260,14 +312,11 @@ fun AuthScreen(
         }
     }
 
-    // Observe UI state
     val uiState by viewModel.uiState.collectAsState()
 
-    // Handle UI state changes
     LaunchedEffect(uiState) {
         when (uiState) {
             is AuthUiState.Success -> {
-                // Toast mesajını göster ve hemen ana sayfaya git
                 navController.navigate("home") {
                     popUpTo("auth") { inclusive = true }
                 }

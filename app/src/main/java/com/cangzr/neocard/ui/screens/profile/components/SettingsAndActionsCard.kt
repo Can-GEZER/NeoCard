@@ -51,7 +51,6 @@ fun SettingsAndActionsCard(
     var showLanguageDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     
-    // Get current language
     val currentLanguage = remember { LanguageManager.getSelectedLanguage(context) }
     var selectedLanguage by remember { mutableStateOf(currentLanguage) }
 
@@ -70,7 +69,6 @@ fun SettingsAndActionsCard(
                 UserUtils.deleteAccount(context) { success: Boolean, message: String ->
                     Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                     if (success) {
-                        // Hesap silindikten sonra auth ekranına yönlendir
                         navController.navigate("auth") {
                             popUpTo(0) { inclusive = true }
                         }
@@ -80,7 +78,6 @@ fun SettingsAndActionsCard(
         )
     }
     
-    // Language selection dialog
     if (showLanguageDialog) {
         AlertDialog(
             onDismissRequest = { showLanguageDialog = false },
@@ -90,7 +87,6 @@ fun SettingsAndActionsCard(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Turkish option
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -106,7 +102,6 @@ fun SettingsAndActionsCard(
                         Text(text = context.getString(R.string.language_turkish))
                     }
                     
-                    // English option
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -122,7 +117,6 @@ fun SettingsAndActionsCard(
                         Text(text = context.getString(R.string.language_english))
                     }
                     
-                    // System default option
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -142,11 +136,9 @@ fun SettingsAndActionsCard(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        // Apply language change
                         LanguageManager.setLanguage(context, selectedLanguage)
                         showLanguageDialog = false
                         
-                        // Restart the activity to apply changes
                         val activity = context as? Activity
                         activity?.let {
                             val intent = it.intent
@@ -182,7 +174,6 @@ fun SettingsAndActionsCard(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Language settings
             ActionButton(
                 iconRes = R.drawable.settings,
                 title = context.getString(R.string.language),

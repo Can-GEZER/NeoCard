@@ -234,6 +234,12 @@
     <string name="uploading">Uploading...</string>
     <string name="upload_error">An error occurred while uploading the image</string>
     <string name="preview">Preview</string>
+    <string name="validation_website_invalid">Enter a valid website address (e.g., example.com)</string>
+    <string name="validation_linkedin_invalid">Enter a valid LinkedIn profile (e.g., linkedin.com/in/username)</string>
+    <string name="validation_github_invalid">Enter a valid GitHub profile (e.g., github.com/username)</string>
+    <string name="validation_twitter_invalid">Enter a valid Twitter profile (e.g., twitter.com/username)</string>
+    <string name="validation_instagram_invalid">Enter a valid Instagram profile (e.g., instagram.com/username)</string>
+    <string name="validation_facebook_invalid">Enter a valid Facebook profile (e.g., facebook.com/username)</string>
     <string name="please_login">Please login</string>
     <string name="premium_card_limit">You can only create 1 card without premium.</string>
     <string name="image_upload_error">Error uploading image: %s</string>
@@ -329,6 +335,26 @@
     <string name="new_connection_request">New Connection Request</string>
     <string name="connection_request_message">%s sent you a connection request</string>
     <string name="connection_removed">Connection successfully removed!</string>
+    <string name="invite_friend">Invite Friend</string>
+    <string name="invite_friend_description">Invite your friends and earn 1 week of premium membership for each invitation!</string>
+    <string name="invite_message">Would you like to try NeoCard app? Sign up with this link: %s</string>
+    <string name="referral_count">You invited %d people</string>
+    <string name="your_referral_code">Your Referral Code: %s</string>
+    <string name="skills">Skills and Competencies</string>
+    <string name="add_skill">Add Skill</string>
+    <string name="skill_name">Skill Name</string>
+    <string name="skill_level">Level</string>
+    <string name="experience_years">Years of Experience</string>
+    <string name="skill_beginner">Beginner</string>
+    <string name="skill_intermediate">Intermediate</string>
+    <string name="skill_advanced">Advanced</string>
+    <string name="skill_expert">Expert</string>
+    <string name="skill_premium_only">Level and experience year features are only available for premium members</string>
+    <string name="select_level">Select Level</string>
+    <string name="clear">Clear</string>
+    <string name="remove">Remove</string>
+    <string name="year">Year</string>
+    <string name="years">Years</string>
     
     <!-- Business Card List -->
     <string name="my_connections">My Connections</string>

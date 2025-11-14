@@ -27,7 +27,6 @@ class NotificationSyncWorker(
                 return Result.success()
             }
             
-            // Okunmamış bildirimleri kontrol et
             val firestore = FirebaseFirestore.getInstance()
             val unreadNotifications = firestore.collection("users")
                 .document(currentUser.uid)
@@ -38,7 +37,6 @@ class NotificationSyncWorker(
             
             Log.d(TAG, "Okunmamış bildirim sayısı: ${unreadNotifications.size()}")
             
-            // Her okunmamış bildirim için local notification göster
             unreadNotifications.documents.forEach { doc ->
                 val notification = doc.data
                 if (notification != null) {
@@ -48,7 +46,6 @@ class NotificationSyncWorker(
                     
                     Log.d(TAG, "Background notification gösteriliyor: $title")
                     
-                    // Local notification göster
                     NotificationHelper.showNotification(
                         context = applicationContext,
                         title = title,
@@ -57,7 +54,6 @@ class NotificationSyncWorker(
                         data = notification
                     )
                     
-                    // Bildirimi received olarak işaretle
                     doc.reference.update("received", true)
                 }
             }

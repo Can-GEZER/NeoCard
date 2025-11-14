@@ -13,9 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 object UserUtils {
-    // Admin kullanıcı kontrolü
     fun isAdmin(userId: String?): Boolean {
-        // Admin kullanıcı ID'leri - buraya admin kullanıcıların UID'lerini ekleyin
         val adminUserIds = listOf(
             "bhEx5ZPVyOY4YJ61FdaboFhfy1B2", // Örnek admin UID
         )
@@ -31,10 +29,8 @@ object UserUtils {
         if (user != null) {
             val uid = user.uid
             
-            // Kullanıcının verilerini sil (tüm hesap tipleri için aynı işlem)
             deleteUserData(uid, firestore, storageManager, context) { success, message ->
                 if (success) {
-                    // Veriler silindikten sonra kullanıcıyı çıkış yaptır
                     auth.signOut()
                     onResult(true, context.getString(R.string.account_deleted_successfully))
                 } else {
@@ -53,24 +49,19 @@ object UserUtils {
         context: Context,
         onComplete: (Boolean, String) -> Unit
     ) {
-        // Kullanıcının kartlarını al
         firestore.collection("users").document(uid)
             .collection("cards").get()
             .addOnSuccessListener { cardsSnapshot ->
-                // Batch işlemi başlat
                 val batch = firestore.batch()
                 
-                // Tüm kartları sil
                 for (cardDoc in cardsSnapshot.documents) {
                     batch.delete(cardDoc.reference)
                     
-                    // public_cards koleksiyonundan da sil
                     val cardId = cardDoc.id
                     val publicCardRef = firestore.collection("public_cards").document(cardId)
                     batch.delete(publicCardRef)
                 }
                 
-                // Kullanıcının bildirimlerini sil
                 firestore.collection("users").document(uid)
                     .collection("notifications").get()
                     .addOnSuccessListener { notificationsSnapshot ->
@@ -78,7 +69,6 @@ object UserUtils {
                             batch.delete(notifDoc.reference)
                         }
                         
-                        // Kullanıcının iş ilanlarını sil
                         firestore.collection("jobPosts")
                             .whereEqualTo("userId", uid)
                             .get()
@@ -87,13 +77,10 @@ object UserUtils {
                                     batch.delete(jobDoc.reference)
                                 }
                                 
-                                // Kullanıcı belgesini sil
                                 batch.delete(firestore.collection("users").document(uid))
                                 
-                                // Batch işlemini uygula
                                 batch.commit()
                                     .addOnSuccessListener {
-                                        // Storage'daki tüm resimleri sil
                                         CoroutineScope(Dispatchers.IO).launch {
                                             try {
                                                 storageManager.deleteAllUserImages(uid)
@@ -102,7 +89,6 @@ object UserUtils {
                                                 }
                                             } catch (e: Exception) {
                                                 withContext(Dispatchers.Main) {
-                                                    // Storage hatası olsa bile devam et
                                                     onComplete(true, context.getString(R.string.account_deleted_successfully))
                                                 }
                                             }

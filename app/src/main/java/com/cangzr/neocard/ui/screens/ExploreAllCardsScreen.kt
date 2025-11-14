@@ -52,7 +52,6 @@ fun ExploreAllCardsScreen(navController: NavHostController) {
     var hasMoreCards by remember { mutableStateOf(true) }
     val pageSize = 20
 
-    // İlk veri yüklemesi
     LaunchedEffect(Unit) {
         loadExploreCards(
             firestore = firestore,
@@ -71,7 +70,6 @@ fun ExploreAllCardsScreen(navController: NavHostController) {
         )
     }
     
-    // Daha fazla kart yükleme fonksiyonu
     fun loadMoreCards() {
         if (!hasMoreCards || isLoadingMore || currentUserId == null) return
         
@@ -93,7 +91,6 @@ fun ExploreAllCardsScreen(navController: NavHostController) {
         )
     }
 
-    // Arama ile filtreleme
     val filteredCards = remember(exploreCards, searchQuery) {
         if (searchQuery.isEmpty()) {
             exploreCards
@@ -129,7 +126,6 @@ fun ExploreAllCardsScreen(navController: NavHostController) {
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Arama Çubuğu
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
@@ -186,7 +182,6 @@ fun ExploreAllCardsScreen(navController: NavHostController) {
                     items(filteredCards.size) { index ->
                         val card = filteredCards[index]
                         
-                        // Her 5 kartvizit sonrası reklam ekle
                         if (index > 0 && index % 5 == 0) {
                             InlineAdView(
                                 modifier = Modifier
@@ -194,7 +189,6 @@ fun ExploreAllCardsScreen(navController: NavHostController) {
                                     .padding(vertical = 8.dp)
                             )
                         }
-                        // UserCardItem'ı HomeScreen'den import etmek yerine, burada inline olarak kullanacağız
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -212,12 +206,10 @@ fun ExploreAllCardsScreen(navController: NavHostController) {
                                     verticalArrangement = Arrangement.SpaceBetween,
                                     modifier = Modifier.fillMaxWidth().fillMaxSize()
                                 ) {
-                                    // Üst kısım: Profil resmi + Bilgiler
                                     Row(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         verticalAlignment = Alignment.Top
                                     ) {
-                                        // Profil resmi (varsa göster)
                                         if (!card.profileImageUrl.isNullOrEmpty()) {
                                             coil.compose.AsyncImage(
                                                 model = coil.request.ImageRequest.Builder(LocalContext.current)
@@ -238,7 +230,6 @@ fun ExploreAllCardsScreen(navController: NavHostController) {
                                             )
                                         }
 
-                                        // Bilgiler
                                         Column(
                                             verticalArrangement = Arrangement.spacedBy(4.dp),
                                             modifier = Modifier.weight(1f)
@@ -251,7 +242,6 @@ fun ExploreAllCardsScreen(navController: NavHostController) {
                                         }
                                     }
 
-                                    // Alt kısım: Sosyal Medya İkonları (sola hizalı)
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -268,9 +258,7 @@ fun ExploreAllCardsScreen(navController: NavHostController) {
                         }
                     }
                     
-                    // Kaydırma tabanlı lazy loading - son öğeye yaklaşıldığında otomatik yükleme
                     if (hasMoreCards && searchQuery.isEmpty()) {
-                        // Son öğeye yaklaşıldığında otomatik yükleme tetikleyicisi
                         val lastVisibleItemIndex = filteredCards.size - 3
                         items(filteredCards.size) { index ->
                             if (index >= lastVisibleItemIndex && !isLoadingMore) {
@@ -280,7 +268,6 @@ fun ExploreAllCardsScreen(navController: NavHostController) {
                             }
                         }
                         
-                        // Yükleme göstergesi
                         if (isLoadingMore) {
                             item {
                                 Box(
@@ -303,7 +290,6 @@ fun ExploreAllCardsScreen(navController: NavHostController) {
     }
 }
 
-// Yardımcı fonksiyonlar
 @Composable
 fun ExploreSocialIcon(iconRes: Int, color: Color) {
     androidx.compose.foundation.Image(
@@ -316,7 +302,6 @@ fun ExploreSocialIcon(iconRes: Int, color: Color) {
 
 fun parseBackground(card: UserCard): Brush {
     return if (card.backgroundType == "GRADIENT") {
-        // Tüm dillerde gradyan eşleşmesi için
         val allGradients = listOf(
             Pair("Gün Batımı", Brush.horizontalGradient(listOf(Color(0xFFFE6B8B), Color(0xFFFF8E53)))),
             Pair("Sunset", Brush.horizontalGradient(listOf(Color(0xFFFE6B8B), Color(0xFFFF8E53)))),
@@ -351,5 +336,4 @@ fun parseTextStyle(dto: TextStyleDTO?): androidx.compose.ui.text.TextStyle {
         color = Color(android.graphics.Color.parseColor(dto?.color ?: "#000000"))
     )
 }
-
 

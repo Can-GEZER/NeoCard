@@ -81,8 +81,6 @@ data class ConnectionRequest(
     val user: User? = null
 )
 
-// User data class is now imported from shared model
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConnectionRequestsScreen(
@@ -97,7 +95,6 @@ fun ConnectionRequestsScreen(
     var isLoading by remember { mutableStateOf(true) }
     var isRefreshing by remember { mutableStateOf(false) }
 
-    // Bağlantı isteklerini yükle
     LaunchedEffect(currentUser) {
         if (currentUser != null) {
             loadConnectionRequests(currentUser.uid, firestore) { requests ->
@@ -109,7 +106,6 @@ fun ConnectionRequestsScreen(
         }
     }
 
-    // Yenileme fonksiyonu
     fun refreshRequests() {
         if (currentUser != null) {
             isRefreshing = true
@@ -162,7 +158,6 @@ fun ConnectionRequestsScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // İstatistik kartı
             if (connectionRequests.isNotEmpty()) {
                 Card(
                     modifier = Modifier
@@ -201,7 +196,6 @@ fun ConnectionRequestsScreen(
                 }
             }
 
-            // İçerik
             if (isLoading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -247,7 +241,6 @@ fun ConnectionRequestsScreen(
                     }
                 }
             } else {
-                // Her 5 bağlantı isteği sonrası reklam ekle
                 val itemsWithAds = withAdItems(
                     items = connectionRequests,
                     adInterval = 5, // Her 5 istek sonrası reklam
@@ -322,13 +315,11 @@ fun ConnectionRequestItem(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Kullanıcı bilgileri
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Profil resmi
                 Box(
                     modifier = Modifier
                         .size(48.dp)
@@ -360,7 +351,6 @@ fun ConnectionRequestItem(
                     }
                 }
 
-                // Kullanıcı detayları
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
@@ -383,7 +373,6 @@ fun ConnectionRequestItem(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Aksiyon butonları
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -424,7 +413,6 @@ fun ConnectionRequestItem(
     }
 }
 
-// Bağlantı isteklerini yükleme fonksiyonu
 private fun loadConnectionRequests(
     userId: String,
     firestore: FirebaseFirestore,
@@ -458,4 +446,3 @@ private fun loadConnectionRequests(
         }
 }
 
-// Utility functions are now imported from shared utils

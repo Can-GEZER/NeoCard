@@ -2,30 +2,8 @@ package com.cangzr.neocard.utils
 
 import java.util.regex.Pattern
 
-/**
- * ValidationUtils provides validation functions for user input fields.
- * 
- * This utility class contains validation logic for form fields including email format,
- * phone number format, URL patterns, and string length checks. All validation methods
- * return [ValidationResult] which can be either [ValidationResult.Valid] or
- * [ValidationResult.Invalid] with a user-friendly error message.
- * 
- * **Supported Validations:**
- * - Name and surname (length, character validation)
- * - Email (format, length, domain validation)
- * - Phone (format, length, numeric validation)
- * - Website URLs (pattern validation)
- * - Social media URLs (LinkedIn, GitHub, Twitter, Instagram, Facebook)
- * - Company, title, bio (length validation)
- * 
- * @see [ValidationResult] Validation result type
- * @see com.cangzr.neocard.ui.screens.createcard.viewmodels.CreateCardViewModel ViewModel using validations
- * 
- * @since 1.0
- */
 object ValidationUtils {
     
-    // Validation constants
     private const val MIN_PHONE_LENGTH = 7
     private const val MAX_PHONE_LENGTH = 20
     private const val MIN_NAME_LENGTH = 2
@@ -35,12 +13,6 @@ object ValidationUtils {
     private const val MAX_TITLE_LENGTH = 100
     private const val MAX_BIO_LENGTH = 500
     
-    /**
-     * Validates name field
-     * @param name The name to validate
-     * @param isRequired Whether the field is required
-     * @return ValidationResult
-     */
     fun validateName(name: String, isRequired: Boolean = true): ValidationResult {
         return when {
             name.isEmpty() && isRequired -> ValidationResult.Invalid("İsim gereklidir")
@@ -52,12 +24,6 @@ object ValidationUtils {
         }
     }
     
-    /**
-     * Validates surname field
-     * @param surname The surname to validate
-     * @param isRequired Whether the field is required
-     * @return ValidationResult
-     */
     fun validateSurname(surname: String, isRequired: Boolean = false): ValidationResult {
         return when {
             surname.isEmpty() && isRequired -> ValidationResult.Invalid("Soyisim gereklidir")
@@ -69,12 +35,6 @@ object ValidationUtils {
         }
     }
     
-    /**
-     * Enhanced email validation with format and length checks
-     * @param email The email to validate
-     * @param isRequired Whether the field is required
-     * @return ValidationResult
-     */
     fun validateEmail(email: String, isRequired: Boolean = false): ValidationResult {
         return when {
             email.isEmpty() && isRequired -> ValidationResult.Invalid("E-posta adresi gereklidir")
@@ -88,14 +48,7 @@ object ValidationUtils {
         }
     }
     
-    /**
-     * Enhanced phone validation with length and numeric checks
-     * @param phone The phone number to validate
-     * @param isRequired Whether the field is required
-     * @return ValidationResult
-     */
     fun validatePhone(phone: String, isRequired: Boolean = false): ValidationResult {
-        // Remove formatting characters for length check
         val digitsOnly = phone.filter { it.isDigit() }
         
         return when {
@@ -109,12 +62,6 @@ object ValidationUtils {
         }
     }
     
-    /**
-     * Enhanced website URL validation with pattern check
-     * @param website The website URL to validate
-     * @param isRequired Whether the field is required
-     * @return ValidationResult
-     */
     fun validateWebsite(website: String, isRequired: Boolean = false): ValidationResult {
         return when {
             website.isEmpty() && isRequired -> ValidationResult.Invalid("Website adresi gereklidir")
@@ -126,12 +73,6 @@ object ValidationUtils {
         }
     }
     
-    /**
-     * Validates company name
-     * @param company The company name to validate
-     * @param isRequired Whether the field is required
-     * @return ValidationResult
-     */
     fun validateCompany(company: String, isRequired: Boolean = false): ValidationResult {
         return when {
             company.isEmpty() && isRequired -> ValidationResult.Invalid("Şirket adı gereklidir")
@@ -141,12 +82,6 @@ object ValidationUtils {
         }
     }
     
-    /**
-     * Validates title/position
-     * @param title The title to validate
-     * @param isRequired Whether the field is required
-     * @return ValidationResult
-     */
     fun validateTitle(title: String, isRequired: Boolean = false): ValidationResult {
         return when {
             title.isEmpty() && isRequired -> ValidationResult.Invalid("Ünvan gereklidir")
@@ -156,12 +91,6 @@ object ValidationUtils {
         }
     }
     
-    /**
-     * Validates bio/description
-     * @param bio The bio to validate
-     * @param isRequired Whether the field is required
-     * @return ValidationResult
-     */
     fun validateBio(bio: String, isRequired: Boolean = false): ValidationResult {
         return when {
             bio.isEmpty() && isRequired -> ValidationResult.Invalid("Bio gereklidir")
@@ -170,28 +99,18 @@ object ValidationUtils {
             else -> ValidationResult.Valid
         }
     }
-    
-    // Legacy compatibility methods (Boolean return type)
-    
-    /**
-     * Email format validation (legacy)
-     */
-    fun isValidEmail(email: String): Boolean {
+
+fun isValidEmail(email: String): Boolean {
         if (email.isEmpty()) return true
         return isValidEmailFormat(email)
     }
     
-    /**
-     * Phone format validation (legacy)
-     */
     fun isValidPhone(phone: String): Boolean {
         if (phone.isEmpty()) return true
         return isValidPhoneFormat(phone)
     }
-    
-    // Private helper methods
-    
-    private fun isValidEmailFormat(email: String): Boolean {
+
+private fun isValidEmailFormat(email: String): Boolean {
         val emailPattern = Pattern.compile(
             "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
         )
@@ -210,18 +129,12 @@ object ValidationUtils {
         return websitePattern.matcher(url).matches()
     }
     
-    // Website URL validation (legacy)
     fun isValidWebsite(website: String): Boolean {
         if (website.isEmpty()) return true
         return isValidUrlPattern(website)
     }
-    
-    // Social media validation methods
-    
-    /**
-     * LinkedIn URL validation
-     */
-    fun validateLinkedIn(linkedin: String): ValidationResult {
+
+fun validateLinkedIn(linkedin: String): ValidationResult {
         if (linkedin.isEmpty()) return ValidationResult.Valid
         val linkedinPattern = Pattern.compile(
             "^(https?://)?(www\\.)?linkedin\\.com/in/[a-zA-Z0-9-]+/?$"
@@ -233,9 +146,6 @@ object ValidationUtils {
         }
     }
     
-    /**
-     * GitHub URL validation
-     */
     fun validateGitHub(github: String): ValidationResult {
         if (github.isEmpty()) return ValidationResult.Valid
         val githubPattern = Pattern.compile(
@@ -248,9 +158,6 @@ object ValidationUtils {
         }
     }
     
-    /**
-     * Twitter/X URL validation
-     */
     fun validateTwitter(twitter: String): ValidationResult {
         if (twitter.isEmpty()) return ValidationResult.Valid
         val twitterPattern = Pattern.compile(
@@ -263,9 +170,6 @@ object ValidationUtils {
         }
     }
     
-    /**
-     * Instagram URL validation
-     */
     fun validateInstagram(instagram: String): ValidationResult {
         if (instagram.isEmpty()) return ValidationResult.Valid
         val instagramPattern = Pattern.compile(
@@ -278,9 +182,6 @@ object ValidationUtils {
         }
     }
     
-    /**
-     * Facebook URL validation
-     */
     fun validateFacebook(facebook: String): ValidationResult {
         if (facebook.isEmpty()) return ValidationResult.Valid
         val facebookPattern = Pattern.compile(
@@ -292,10 +193,8 @@ object ValidationUtils {
             ValidationResult.Invalid("Geçersiz Facebook profil adresi")
         }
     }
-    
-    // Legacy social media validation (Boolean return type)
-    
-    fun isValidLinkedIn(linkedin: String): Boolean {
+
+fun isValidLinkedIn(linkedin: String): Boolean {
         if (linkedin.isEmpty()) return true
         val linkedinPattern = Pattern.compile(
             "^(https?://)?(www\\.)?linkedin\\.com/in/[a-zA-Z0-9-]+/?$"
@@ -334,39 +233,25 @@ object ValidationUtils {
         )
         return facebookPattern.matcher(facebook).matches()
     }
-    
-    // Input filter methods
-    
-    /**
-     * Phone input filter - only valid characters
-     */
-    fun filterPhoneInput(input: String): String {
+
+fun filterPhoneInput(input: String): String {
         return input.filter { char ->
             char.isDigit() || char == '+' || char == '-' || char == '(' || char == ')' || char == ' '
         }
     }
     
-    /**
-     * Email input filter - valid email characters
-     */
     fun filterEmailInput(input: String): String {
         return input.filter { char ->
             char.isLetterOrDigit() || char == '@' || char == '.' || char == '_' || char == '-' || char == '+'
         }
     }
     
-    /**
-     * Website input filter - valid URL characters
-     */
     fun filterWebsiteInput(input: String): String {
         return input.filter { char ->
             char.isLetterOrDigit() || char == '.' || char == '/' || char == ':' || char == '-' || char == '_'
         }
     }
     
-    /**
-     * Social media input filter - common social media characters
-     */
     fun filterSocialInput(input: String): String {
         return input.filter { char ->
             char.isLetterOrDigit() || char == '.' || char == '/' || char == ':' || char == '-' || char == '_' || char == '@'

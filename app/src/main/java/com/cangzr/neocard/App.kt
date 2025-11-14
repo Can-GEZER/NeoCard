@@ -44,26 +44,20 @@ fun NeoCardApp(initialCardId: String? = null) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     
-    // AdManager örneğini başlat
     val adManager = remember { AdManager.getInstance(context) }
     
-    // NetworkUtils örneğini başlat
     val networkUtils = remember { NetworkUtils.getInstance(context) }
 
-    // Dil ayarlarını uygula
     LaunchedEffect(Unit) {
         LanguageManager.applyLanguageFromPreference(context)
     }
 
-    // Periyodik temizleme işlemini başlat
     LaunchedEffect(Unit) {
-        // Her 7 günde bir çalışacak periyodik iş
         val cleanupWorkRequest = PeriodicWorkRequestBuilder<StorageCleanupWorker>(
             7, TimeUnit.DAYS, // Her 7 günde bir çalış
             6, TimeUnit.HOURS  // 6 saatlik esneklik
         ).build()
         
-        // Önceden zamanlanmış bir iş varsa, onu güncelle
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
             "storage_cleanup",
             ExistingPeriodicWorkPolicy.KEEP,
@@ -72,7 +66,6 @@ fun NeoCardApp(initialCardId: String? = null) {
     }
 
     LaunchedEffect(initialCardId) {
-        // Deep link ile gelen cardId varsa, detay sayfasına yönlendir
         initialCardId?.let { cardId ->
             navController.navigate(Screen.SharedCardDetail.createRoute(cardId))
         }
@@ -80,16 +73,13 @@ fun NeoCardApp(initialCardId: String? = null) {
 
     androidx.compose.material3.Scaffold(
         bottomBar = {
-            // Ana ekranlar için alt menüyü göster, detay ekranlarında gizle
             val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
             val mainRoutes = listOf(Screen.Home.route, Screen.Profile.route, Screen.CreateCard.route,
                 Screen.Business.route)
             
             if (currentRoute in mainRoutes) {
                 Column {
-                    // Önce navigation bar
                     BottomNavBar(navController = navController)
-                    // Sonra alt banner reklam
                     BottomBannerAd()
                 }
             }
@@ -100,7 +90,6 @@ fun NeoCardApp(initialCardId: String? = null) {
             startDestination = Screen.Splash.route,
             modifier = Modifier.padding(paddingValues)
         ) {
-            // Splash ve Onboarding ekranları
             composable(Screen.Splash.route) {
                 SplashScreen(navController = navController)
             }
@@ -108,7 +97,6 @@ fun NeoCardApp(initialCardId: String? = null) {
                 OnboardingScreen(navController = navController)
             }
             
-            // Ana ekranlar
             composable(Screen.Home.route) {
                 HomeScreen(navController = navController)
             }
@@ -119,7 +107,17 @@ fun NeoCardApp(initialCardId: String? = null) {
                 ProfileScreen(navController = navController)
             }
             composable(Screen.CreateCard.route) {
-                CreateCardScreen(navController = navController)
+                CreateCardScreen(
+                    navController = navController,
+                    cardId = null
+                )
+            }
+            composable(Screen.EditCard.route) { backStackEntry ->
+                val cardId = backStackEntry.arguments?.getString("cardId") ?: ""
+                CreateCardScreen(
+                    navController = navController,
+                    cardId = cardId
+                )
             }
             composable(Screen.Auth.route) {
                 AuthScreen(navController = navController)

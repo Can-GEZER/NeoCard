@@ -8,18 +8,13 @@ import android.net.NetworkRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-/**
- * İnternet bağlantısını kontrol eden ve izleyen yardımcı sınıf
- */
 class NetworkUtils private constructor(private val context: Context) {
 
     private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     
-    // İnternet bağlantısı durumu
     private val _isNetworkAvailable = MutableStateFlow(false)
     val isNetworkAvailable: StateFlow<Boolean> = _isNetworkAvailable
 
-    // Ağ değişikliklerini dinlemek için callback
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             _isNetworkAvailable.value = true
@@ -35,16 +30,11 @@ class NetworkUtils private constructor(private val context: Context) {
     }
 
     init {
-        // Mevcut bağlantı durumunu kontrol et
         checkNetworkAvailability()
         
-        // Ağ değişikliklerini dinlemeye başla
         registerNetworkCallback()
     }
 
-    /**
-     * Mevcut ağ bağlantısını kontrol eder
-     */
     fun checkNetworkAvailability() {
         val network = connectivityManager.activeNetwork
         val capabilities = connectivityManager.getNetworkCapabilities(network)
@@ -56,9 +46,6 @@ class NetworkUtils private constructor(private val context: Context) {
         )
     }
 
-    /**
-     * Ağ değişikliklerini dinlemeye başlar
-     */
     private fun registerNetworkCallback() {
         val networkRequest = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
@@ -67,9 +54,6 @@ class NetworkUtils private constructor(private val context: Context) {
         connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
     }
 
-    /**
-     * Ağ değişikliklerini dinlemeyi durdurur
-     */
     fun unregisterNetworkCallback() {
         connectivityManager.unregisterNetworkCallback(networkCallback)
     }

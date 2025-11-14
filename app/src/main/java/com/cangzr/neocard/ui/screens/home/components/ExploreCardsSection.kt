@@ -64,7 +64,6 @@ fun ExploreCardsSection(navController: NavHostController) {
     var exploreCards by remember { mutableStateOf<List<UserCard>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
-    // İlk veri yüklemesi
     LaunchedEffect(Unit) {
         loadExploreCards(
             firestore = firestore,
@@ -85,7 +84,6 @@ fun ExploreCardsSection(navController: NavHostController) {
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Başlık ve Tümünü Gör Butonu
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -110,7 +108,6 @@ fun ExploreCardsSection(navController: NavHostController) {
             }
         }
         
-        // Kart Listesi
         if (isLoading) {
             Box(
                 modifier = Modifier
@@ -146,10 +143,8 @@ fun ExploreCardsSection(navController: NavHostController) {
                 }
             }
         } else {
-            // Sadece ilk 20 kartviziti göster
             val limitedCards = exploreCards.take(20)
             
-            // Kartvizitleri göster - LazyColumn ile kaydırılabilir
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()

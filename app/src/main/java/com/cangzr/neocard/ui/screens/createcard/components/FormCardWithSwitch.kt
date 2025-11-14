@@ -88,7 +88,6 @@ fun FormCardWithSwitch(
             
             Spacer(modifier = Modifier.height(4.dp))
             
-            // Seçime bağlı açıklama metni
             Text(
                 text = if (isChecked) 
                     context.getString(R.string.card_visible_to_all) 

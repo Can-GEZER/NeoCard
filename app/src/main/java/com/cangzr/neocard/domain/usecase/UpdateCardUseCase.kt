@@ -6,16 +6,18 @@ import com.cangzr.neocard.data.model.UserCard
 import com.cangzr.neocard.data.repository.CardRepository
 import javax.inject.Inject
 
-class SaveCardUseCase @Inject constructor(
+class UpdateCardUseCase @Inject constructor(
     private val cardRepository: CardRepository
 ) {
     suspend operator fun invoke(
         userId: String,
+        cardId: String,
         card: UserCard,
         imageUri: Uri? = null
-    ): Resource<String> {
-        return cardRepository.saveCard(
+    ): Resource<Unit> {
+        return cardRepository.updateCard(
             userId = userId,
+            cardId = cardId,
             card = card,
             imageUri = imageUri
         )

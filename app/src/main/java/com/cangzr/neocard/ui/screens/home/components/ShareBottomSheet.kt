@@ -94,27 +94,21 @@ fun ShareBottomSheet(
     val density = LocalDensity.current
     val textMeasurer = rememberTextMeasurer()
     
-    // Paylaşım launcher'ı
     val shareLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
-    ) { /* Paylaşım tamamlandı */ }
+    ) {  }
     
-    // Kartvizit bitmap'ini oluştur - UserCard boyutunda (300x180dp = 900x540px)
     fun createCardBitmap(): Bitmap {
-        // UserCard boyutları: 300dp x 180dp = 900px x 540px (3x density)
         val width = 900
         val height = 540
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = AndroidCanvas(bitmap)
         
-        // Kartvizit şekli için yuvarlak köşeler (16dp = 48px)
         val cornerRadius = 48f
         
-        // Arkaplan rengi/gradyanı
         val backgroundRect = android.graphics.RectF(0f, 0f, width.toFloat(), height.toFloat())
         
         if (card.backgroundType == "GRADIENT") {
-            // Gradyan için renk eşleştirmesi
             val gradientName = card.selectedGradient
             val (colors, isVertical) = when (gradientName) {
                 "Gün Batımı", "Sunset" -> Pair(intArrayOf(0xFFFE6B8B.toInt(), 0xFFFF8E53.toInt()), false)
@@ -146,7 +140,6 @@ fun ShareBottomSheet(
             }
             canvas.drawRoundRect(backgroundRect, cornerRadius, cornerRadius, paint)
         } else {
-            // Tek renk arkaplan
             val paint = Paint().apply {
                 color = android.graphics.Color.parseColor(card.backgroundColor)
                 isAntiAlias = true
@@ -154,17 +147,14 @@ fun ShareBottomSheet(
             canvas.drawRoundRect(backgroundRect, cornerRadius, cornerRadius, paint)
         }
         
-        // Padding değerleri (16dp = 48px)
         val padding = 48f
         val contentWidth = width - (padding * 2)
         val contentHeight = height - (padding * 2)
         
-        // Profil resmi boyutu (64dp = 192px)
         val profileSize = 192f
         val profileX = padding
         val profileY = padding
         
-        // Metin alanı başlangıcı - profil resmi varsa gap, yoksa padding'den başla
         val textStartX = if (!card.profileImageUrl.isNullOrEmpty()) {
             padding + profileSize + 24f // 8dp = 24px gap
         } else {
@@ -176,7 +166,6 @@ fun ShareBottomSheet(
             contentWidth
         }
         
-        // Profil resmi çiz (eğer varsa) - daire şeklinde
         if (!card.profileImageUrl.isNullOrEmpty()) {
             val profilePaint = Paint().apply {
                 color = android.graphics.Color.LTGRAY
@@ -189,16 +178,13 @@ fun ShareBottomSheet(
                 profilePaint
             )
         }
-        // Profil resmi yoksa alanı boş bırak (UserCard'da da böyle)
         
-        // Metin stilleri - parseTextStyle kullan
         val nameStyle = parseTextStyle(card.textStyles["NAME_SURNAME"])
         val titleStyle = parseTextStyle(card.textStyles["TITLE"])
         val companyStyle = parseTextStyle(card.textStyles["COMPANY"])
         val emailStyle = parseTextStyle(card.textStyles["EMAIL"])
         val phoneStyle = parseTextStyle(card.textStyles["PHONE"])
         
-        // Ad Soyad - 16sp = 48px
         val namePaint = Paint().apply {
             color = nameStyle.color.toArgb()
             textSize = 48f
@@ -210,7 +196,6 @@ fun ShareBottomSheet(
         val nameY = profileY + 60f
         canvas.drawText(nameText, textStartX, nameY, namePaint)
         
-        // Unvan - 14sp = 42px
         if (!card.title.isNullOrEmpty()) {
             val titlePaint = Paint().apply {
                 color = titleStyle.color.toArgb()
@@ -223,7 +208,6 @@ fun ShareBottomSheet(
             canvas.drawText(card.title, textStartX, titleY, titlePaint)
         }
         
-        // Şirket - 14sp = 42px
         if (!card.company.isNullOrEmpty()) {
             val companyPaint = Paint().apply {
                 color = companyStyle.color.toArgb()
@@ -236,7 +220,6 @@ fun ShareBottomSheet(
             canvas.drawText(card.company, textStartX, companyY, companyPaint)
         }
         
-        // Email - 12sp = 36px
         if (!card.email.isNullOrEmpty()) {
             val emailPaint = Paint().apply {
                 color = emailStyle.color.toArgb()
@@ -249,7 +232,6 @@ fun ShareBottomSheet(
             canvas.drawText(card.email, textStartX, emailY, emailPaint)
         }
         
-        // Telefon - 12sp = 36px
         if (!card.phone.isNullOrEmpty()) {
             val phonePaint = Paint().apply {
                 color = phoneStyle.color.toArgb()
@@ -262,16 +244,13 @@ fun ShareBottomSheet(
             canvas.drawText(card.phone, textStartX, phoneY, phonePaint)
         }
         
-        // Sosyal medya ikonları (alt kısımda) - 24dp = 72px
         val socialIconSize = 72f
         val socialStartY = height - padding - socialIconSize
         val socialSpacing = 96f // 32dp = 96px
         var socialX = textStartX
         
-        // Sosyal medya ikonları için renk
         val socialColor = nameStyle.color.toArgb()
         
-        // Sosyal medya ikonu çizme fonksiyonu - gerçek drawable ikonları
         fun drawSocialIcon(canvas: AndroidCanvas, x: Float, y: Float, size: Float, color: Int, iconType: String) {
             try {
                 val drawableId = when (iconType) {
@@ -286,17 +265,14 @@ fun ShareBottomSheet(
                 
                 val drawable = context.getDrawable(drawableId)
                 if (drawable != null) {
-                    // Drawable'ı bitmap'e çevir
                     val iconBitmap = android.graphics.Bitmap.createBitmap(
                         size.toInt(), size.toInt(), android.graphics.Bitmap.Config.ARGB_8888
                     )
                     val iconCanvas = android.graphics.Canvas(iconBitmap)
                     
-                    // Drawable'ı bitmap'e çiz
                     drawable.setBounds(0, 0, size.toInt(), size.toInt())
                     drawable.draw(iconCanvas)
                     
-                    // Renk filtresi uygula - daha basit ve etkili yöntem
                     val paint = Paint().apply {
                         isAntiAlias = true
                         colorFilter = android.graphics.PorterDuffColorFilter(
@@ -305,11 +281,9 @@ fun ShareBottomSheet(
                         )
                     }
                     
-                    // İkonu canvas'a çiz
                     canvas.drawBitmap(iconBitmap, x, y, paint)
                 }
             } catch (e: Exception) {
-                // Hata durumunda basit şekil çiz
                 val paint = Paint().apply {
                     this.color = color
                     isAntiAlias = true
@@ -346,10 +320,8 @@ fun ShareBottomSheet(
         
         return bitmap
     }
-    
-    
-    // SocialIcon composable fonksiyonu
-    @Composable
+
+@Composable
     fun SocialIcon(iconRes: Int, color: ComposeColor) {
         androidx.compose.foundation.Image(
             painter = painterResource(id = iconRes),
@@ -364,7 +336,6 @@ fun ShareBottomSheet(
     val pagerState = rememberPagerState(pageCount = { 2 })
     var showCopyToast by remember { mutableStateOf(false) }
     
-    // QR Code oluşturma
     var qrCodeBitmap by remember { mutableStateOf<Bitmap?>(null) }
     
     LaunchedEffect(card.id) {
@@ -390,11 +361,9 @@ fun ShareBottomSheet(
             }
             qrCodeBitmap = bitmap
         } catch (e: Exception) {
-            // QR kod oluşturma hatası
         }
     }
     
-    // Copy toast gösterimi
     LaunchedEffect(showCopyToast) {
         if (showCopyToast) {
             kotlinx.coroutines.delay(2000)
@@ -406,31 +375,28 @@ fun ShareBottomSheet(
         modifier = Modifier
             .padding(16.dp)
     ) {
-        // Tab Row
         TabRow(
             selectedTabIndex = pagerState.currentPage,
             modifier = Modifier.fillMaxWidth()
         ) {
             Tab(
                 selected = pagerState.currentPage == 0,
-                onClick = { /* Tab click handled by pager */ },
+                onClick = {  },
                 text = { Text(context.getString(R.string.qr_code)) }
             )
             Tab(
                 selected = pagerState.currentPage == 1,
-                onClick = { /* Tab click handled by pager */ },
+                onClick = {  },
                 text = { Text(context.getString(R.string.image)) }
             )
         }
         
-        // Horizontal Pager
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
         ) { page ->
             when (page) {
                 0 -> {
-                    // QR Code ve Link Sayfası
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -443,7 +409,6 @@ fun ShareBottomSheet(
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         
-                        // QR Code
                         Card(
                             modifier = Modifier.size(200.dp),
                             elevation = CardDefaults.cardElevation(4.dp)
@@ -469,7 +434,6 @@ fun ShareBottomSheet(
                         
                         Spacer(modifier = Modifier.height(24.dp))
                         
-                        // Link Card
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(
@@ -503,7 +467,6 @@ fun ShareBottomSheet(
                 }
                 
                 1 -> {
-                    // Card Image Sayfası
                     Column(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -516,7 +479,6 @@ fun ShareBottomSheet(
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         
-                        // Card Preview - Tam UserCard tasarımı
                         Card(
                             modifier = Modifier
                                 .width(300.dp)
@@ -534,12 +496,10 @@ fun ShareBottomSheet(
                                     verticalArrangement = Arrangement.SpaceBetween,
                                     modifier = Modifier.fillMaxSize()
                                 ) {
-                                    // Üst kısım: Profil resmi + Bilgiler
                                     Row(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         verticalAlignment = Alignment.Top
                                     ) {
-                                        // Profil resmi (varsa göster)
                                         if (!card.profileImageUrl.isNullOrEmpty()) {
                                             AsyncImage(
                                                 model = ImageRequest.Builder(context)
@@ -560,7 +520,6 @@ fun ShareBottomSheet(
                                             )
                                         }
 
-                                        // Bilgiler
                                         Column(
                                             verticalArrangement = Arrangement.spacedBy(4.dp),
                                             modifier = Modifier.weight(1f)
@@ -573,7 +532,6 @@ fun ShareBottomSheet(
                                         }
                                     }
 
-                                    // Alt kısım: Sosyal Medya İkonları
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -602,7 +560,6 @@ fun ShareBottomSheet(
                         
                         Spacer(modifier = Modifier.height(24.dp))
                         
-                        // Paylaş Butonu
                         Button(
                             onClick = {
                                 try {
@@ -618,7 +575,6 @@ fun ShareBottomSheet(
                                         tempFile
                                     )
                                     
-                                    // Paylaşım metni - kartvizit linki ile
                                     val shareText = context.getString(R.string.share_text_with_image) + "\n\n🔗 ${context.getString(R.string.view_my_card)}: https://neocard.app/card/${card.id}"
                                     
                                     val shareIntent = Intent().apply {
@@ -631,7 +587,6 @@ fun ShareBottomSheet(
                                     
                                     shareLauncher.launch(Intent.createChooser(shareIntent, context.getString(R.string.share_card)))
                                 } catch (e: Exception) {
-                                    // Hata durumunda log yazdır
                                     android.util.Log.e("ShareBottomSheet", "Paylaşım hatası: ${e.message}")
                                 }
                             },
@@ -652,7 +607,6 @@ fun ShareBottomSheet(
             }
         }
         
-        // Copy Toast
         if (showCopyToast) {
             LaunchedEffect(Unit) {
                 kotlinx.coroutines.delay(2000)

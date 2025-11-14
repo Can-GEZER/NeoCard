@@ -12,14 +12,12 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor() : ViewModel() {
-    // Premium state
     var isPremium by mutableStateOf(false)
         private set
     
     var hasConnectRequests by mutableStateOf(false)
         private set
     
-    // Promo code states
     var promoCodeList by mutableStateOf<List<PromoCode>>(emptyList())
         private set
     
@@ -29,7 +27,6 @@ class ProfileViewModel @Inject constructor() : ViewModel() {
     var showPromoDialog by mutableStateOf(false)
         private set
     
-    // User profile states
     var userDisplayName by mutableStateOf("")
         private set
     
@@ -39,7 +36,6 @@ class ProfileViewModel @Inject constructor() : ViewModel() {
     var currentUser by mutableStateOf<FirebaseUser?>(null)
         private set
     
-    // Connection requests states
     var connectionRequests by mutableStateOf<List<Map<String, String>>>(emptyList())
         private set
     
@@ -49,7 +45,6 @@ class ProfileViewModel @Inject constructor() : ViewModel() {
     var isLoading by mutableStateOf(true)
         private set
     
-    // Settings states
     var selectedOption by mutableStateOf<String?>(null)
         private set
     
@@ -62,11 +57,9 @@ class ProfileViewModel @Inject constructor() : ViewModel() {
     var selectedLanguage by mutableStateOf("")
         private set
     
-    // Premium card states
     var showPremiumSheet by mutableStateOf(false)
         private set
     
-    // Promo code management states
     var showAddPromoDialog by mutableStateOf(false)
         private set
     
@@ -79,7 +72,6 @@ class ProfileViewModel @Inject constructor() : ViewModel() {
     var expandedCodeId by mutableStateOf<String?>(null)
         private set
     
-    // Actions
     fun updatePremiumStatus(isPremium: Boolean) {
         this.isPremium = isPremium
     }
